@@ -1,6 +1,6 @@
 # Illoominate - Data Importance for Recommender Systems
 
-Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) errors, offering insights into the relevance and quality of data in large-scale recommendation models. This library is tailored for sequential kNN based algorithms such as session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
+Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) errors, offering insights into the relevance and quality of data in large-scale recommendation models. This library is tailored for sequential kNN based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
 
 # Illoominate Framework
@@ -10,7 +10,7 @@ This repository contains the code for the illoominate framework, which accompani
 This code is made available **exclusively for peer review purposes**.
 
 - Any use, reproduction, or modification of this code is **prohibited** without explicit written permission from the authors.
-- Upon acceptance of the manuscript, the repository will be updated to include a standalone, pip-installable version of the library, licensed under the open-source Apache License 2.0 license.
+- Upon acceptance of the manuscript, the repository will be updated to include a standalone, pip-installable version of the library, along with all code and experiments described in the paper, released under the open-source Apache License 2.0.
 
 ## Copyright
 © 2024 Barrie Kersbergen. All rights reserved.
