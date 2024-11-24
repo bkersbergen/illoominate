@@ -10,7 +10,7 @@ This repository contains the code for the illoominate framework, which accompani
 This code is made available **exclusively for peer review purposes**.
 
 - Any use, reproduction, or modification of this code is **prohibited** without explicit written permission from the authors.
-- Upon acceptance of the manuscript, the repository will be updated to include a standalone, pip-installable version of the library, along with all code and experiments described in the paper, released under the open-source Apache License 2.0.
+- Upon acceptance of the manuscript, the repository will be updated to include a standalone, pip-installable version of the library. All code and experiments described in the paper will be released under the open-source Apache License 2.0.
 
 ## Copyright
 © 2024 Barrie Kersbergen. All rights reserved.
