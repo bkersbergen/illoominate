@@ -9,6 +9,12 @@ name = "illoominate"
 # "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib", "rlib"]
 
+# Instruct maturin to use this __init__.py
+[tool.maturin]
+python-source = "python"
+module-name = "illoominate._lib_name"
+
+
 [dependencies]
 csv = "1.1"
 dary_heap = "0.3.6"

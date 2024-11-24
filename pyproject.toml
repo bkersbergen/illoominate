@@ -1,0 +1,17 @@
+[build-system]
+requires = ["maturin>=1.70,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "illoominate"
+version = "0.1.0"
+description = "A Rust-powered library for scoring data importance in sequential knn-recommendation systems"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "Barrie Kersbergen", email = "kersbergenb@gmail.com"},
+]
+maintainers = [
+    {name = "Barrie Kersbergen", email = "kersbergenb@gmail.com"},
+]
+requires-python = ">=3.10"
