@@ -22,4 +22,5 @@ maintainers = [
 ]
 requires-python = ">=3.10"
 [tool.maturin]
+python-source = "python"
 features = ["pyo3/extension-module"]
