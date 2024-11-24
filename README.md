@@ -24,6 +24,14 @@ By leveraging the Data Shapley value, Illoominate helps data scientists and engi
 - Improve recommendation quality by identifying impactful data points
 - Prune training data for sustainable item recommendations
 
+
+## Installation
+- Python >= 3.10
+
+`
+pip install illoominate
+`
+
 ### Example Use Case: Computing Data Shapley Values
 
 To compute Data Shapley values for a specific recommendation model (e.g., VMIS-kNN), use the `illoominate.data_shapley_values()` function. This function calculates the impact of each data point in your training data based on a specified recommendation model and evaluation metric.
@@ -99,13 +107,14 @@ KMC-Shapley improves the efficiency of Truncated Data Shapley (TMC-Shapley) by l
 By only computing the utility change when necessary (i.e., when a neighbor's addition impacts the top-k set), KMC-Shapley skips redundant computations, significantly reducing the time complexity.
 
 
-## Installation
+ 
+### Development Installation
+
+To get started with developing **Illoominate** or conducting the experiments from the paper, follow these steps:
 
 Requirements:
 - Rust >= 1.82
 - Python >= 3.10
-
-To get started with **Illoominate**, follow these steps:
 
 1. Clone the repository:
 ```bash
@@ -113,15 +122,14 @@ git clone https://github.com/bkersbergen/illoominate.git
 cd illoominate
 ```
 
-2. Install the required dependencies:
+2. Create the python wheel by:
 ```bash
 pip install -r requirements.txt
 maturin develop --release
-
 ```
 
 
-### Conduct experiments from paper
+#### Conduct experiments from paper
 The experiments from the paper are available in Rust code.
 
 Prepare a config file for a dataset, describing the model, model parameters and the evaluation metric.
