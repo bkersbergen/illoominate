@@ -1,0 +1,16 @@
+[model]
+name = "tifu"
+
+[hpo]
+k = 100
+m = 3
+r_b = 0.9
+r_g = 0.7
+alpha = 0.2
+
+[metric]
+name="ndcg"
+length=21
+
+[logging]
+level = "info"

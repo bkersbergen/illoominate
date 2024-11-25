@@ -1,0 +1,19 @@
+[model]
+name = "tifu"
+
+[hpo]
+k = 100
+m = 7
+r_b = 0.9
+r_g = 0.7
+alpha = 0.7
+
+[metric]
+name="ndcg"
+length=20
+
+[nbr]
+validation_ratio=0.5
+
+[logging]
+level = "info"
