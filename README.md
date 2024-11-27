@@ -92,7 +92,7 @@ print(corrupt_sessions)
 ### Key Features
 
 - Scalable: Optimized for large datasets with millions of interactions.
-- Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world recommender systems.
+- Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
 - Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
 - Visualization: Easily visualize the distribution of Data Shapley values to analyze data quality and identify potential issues.
 - Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
@@ -101,7 +101,7 @@ print(corrupt_sessions)
 
 ### How KMC-Shapley Optimizes DSV Estimation
 
-KMC-Shapley (K-nearest Monte Carlo Shapley) is a custom-tailored, scalable variant of the Data Shapley value computation, designed specifically for sequential KNN-based recommendation systems. 
+KMC-Shapley (K-nearest Monte Carlo Shapley) is a custom-tailored, scalable variant of the Data Shapley value computation, designed specifically for sequential kNN-based recommendation systems. 
 KMC-Shapley improves the efficiency of Truncated Data Shapley (TMC-Shapley) by leveraging the sparsity and nearest-neighbor characteristics of the data, making it feasible to apply Data Shapley values in large-scale recommender systems.
 By only computing the utility change when necessary (i.e., when a neighbor's addition impacts the top-k set), KMC-Shapley skips redundant computations, significantly reducing the time complexity.
 
