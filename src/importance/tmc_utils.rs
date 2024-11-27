@@ -154,12 +154,12 @@ pub(crate) fn error(mem: &Vec<Vec<f64>>, qty_minimal_mc_iterations: usize) -> f6
         return 1.0;
     }
 
-    // Calculate cumulative sums (cumsum) in parallel
+    // Calculate cumulative sums (cumsum)
     let cumsum: Vec<Vec<f64>> = cumsum(mem);
 
     // Compute all_vals by dividing cumulative sums by the number of iterations so far
     let all_vals: Vec<Vec<f64>> = cumsum
-        .into_iter()
+        .into_par_iter()
         .enumerate()
         .map(|(i, session_importances)| {
             session_importances
@@ -171,7 +171,7 @@ pub(crate) fn error(mem: &Vec<Vec<f64>>, qty_minimal_mc_iterations: usize) -> f6
 
     // Get the start index of the last 100 rows
     let start_index = if all_vals.len() > 100 {
-        log::info!("More than 100 rows, only using the last 100 to determine the max error");
+        log::warn!("mem length {} > 100 using last 100 iterations", mem.len());
         all_vals.len() - 100
     } else {
         0

@@ -9,8 +9,7 @@ This repository contains the code for the illoominate framework, which accompani
 ## Important Notice
 This code is made available **exclusively for peer review purposes**.
 
-- Any use, reproduction, or modification of this code is **prohibited** without explicit written permission from the authors.
-- Upon acceptance of the manuscript, the repository will be updated to include a standalone, pip-installable version of the library. All code and experiments described in the paper will be released under the open-source Apache License 2.0.
+- Upon acceptance of the manuscript, this repository including all code and experiment results described in the paper will be released under the open-source Apache License 2.0.
 
 ## Copyright
 © 2024 Barrie Kersbergen. All rights reserved.
@@ -42,8 +41,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # Load training and validation datasets
-train_df = pd.read_csv("data/largersample/train.csv", sep='\t')
-validation_df = pd.read_csv("data/largersample/valid.csv", sep='\t')
+train_df = pd.read_csv("data/nowplaying1m/train.csv", sep='\t')
+validation_df = pd.read_csv("data/nowplaying1m/valid.csv", sep='\t')
 
 # Compute Data Shapley values
 shapley_values = illoominate.data_shapley_values(
@@ -68,7 +67,7 @@ plt.show()
 ```
 ### Sample Output
 The distribution of Data Shapley values can be visualized or used for further analysis.
-![Distribution of Data Shapley Values](images/shapley.png)
+![Distribution of Data Shapley Values](images/nowplaying1m_shapley.png)
 
 ```python
 print(corrupt_sessions)
