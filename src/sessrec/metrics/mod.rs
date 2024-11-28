@@ -42,7 +42,7 @@ pub enum MetricType {
     Ndcg,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MetricConfig {
     pub importance_metric: MetricType,
     pub evaluation_metrics: Vec<MetricType>,
@@ -50,7 +50,7 @@ pub struct MetricConfig {
     pub mrr_alpha: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MetricFactory<'a> {
     pub config: &'a MetricConfig,
     product_info: ProductInfo,

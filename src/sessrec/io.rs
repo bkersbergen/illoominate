@@ -75,7 +75,9 @@ pub fn read_data(path_to_csvfile: &str) -> Vec<Interaction> {
     training_data.collect()
 }
 
-pub fn polars_to(df: DataFrame) -> Result<Vec<Interaction>, PyErr> {
+
+
+pub fn polars_to_interactions(df: DataFrame) -> Result<Vec<Interaction>, PyErr> {
 
     // Pre-fetch columns to avoid repeated lookups
     let session_id_col = df.column("session_id")
@@ -96,11 +98,11 @@ pub fn polars_to(df: DataFrame) -> Result<Vec<Interaction>, PyErr> {
         };
         let item_id = match item_id_col.get(i) {
             Ok(AnyValue::Int64(val)) => val.try_into().unwrap(),
-            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Expected u64 in session_id column")),
+            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Expected u64 in item_id column")),
         };
         let timestamp = match timestamp_col.get(i) {
             Ok(AnyValue::Int64(val)) => val.try_into().unwrap(),
-            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Expected u64 in session_id column")),
+            _ => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Expected u64 in timestamp column")),
         };
 
         // Create an Interaction instance and store it
@@ -149,7 +151,7 @@ mod tests {
         ].expect("Failed to create DataFrame");
 
         // Call the polars_to function
-        let result = polars_to(df);
+        let result = polars_to_interactions(df);
 
         // Assert that the result is Ok
         assert!(result.is_ok());
@@ -180,7 +182,7 @@ mod tests {
         ].expect("Failed to create DataFrame");
 
         // Call the polars_to function
-        let result = polars_to(df);
+        let result = polars_to_interactions(df);
 
         // Assert that the result is an error
         assert!(result.is_err());
@@ -200,7 +202,7 @@ mod tests {
         ].expect("Failed to create DataFrame");
 
         // Call the polars_to function
-        let result = polars_to(df);
+        let result = polars_to_interactions(df);
 
         // Assert that the result is an error
         assert!(result.is_err());

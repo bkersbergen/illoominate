@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::marker::{Send, Sync};
 
 use crate::importance::candidate_neighbors::CandidateNeighbors;
-use crate::importance::tmc_utils::{error_dataset, random_score_dataset};
-use crate::importance::{tmc_utils, Dataset, Importance, RetrievalBasedModel};
+use crate::importance::mc_utils::{error_dataset, random_score_dataset};
+use crate::importance::{mc_utils, Dataset, Importance, RetrievalBasedModel};
 
 use crate::sessrec::metrics::MetricFactory;
 use crate::sessrec::vmisknn::Scored;
@@ -57,6 +57,7 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
 ) -> HashMap<u32, f64> {
     let mut mem_tmc: HashMap<u32, Vec<f64>> = HashMap::with_capacity(train.len());
     log::info!("random_score_dataset()");
+    log::info!("metric_factory: {:?}", metric_factory);
     let (random_score, _random_stddev_score) = random_score_dataset(model, metric_factory, valid);
     log::info!(
         "random_score: {:.4} _random_stddev_score: {:.4}",
@@ -123,7 +124,7 @@ pub fn one_iteration_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + 
     seed: usize,
     iteration: usize,
 ) -> Vec<f64> {
-    let training_keys_permuted = tmc_utils::permutation(train, seed, iteration);
+    let training_keys_permuted = mc_utils::permutation(train, seed, iteration);
     let qty_training_keys = train.collect_keys().len();
     let mut permutation_index = vec![0; qty_training_keys];
     for (idx, &key) in training_keys_permuted.iter().enumerate() {

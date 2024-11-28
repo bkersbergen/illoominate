@@ -16,7 +16,7 @@ use illoominate::sessrec::io;
 use illoominate::sessrec::types::{ItemId, SessionDataset};
 use illoominate::sessrec::vmisknn::VMISKNN;
 use rand::seq::IteratorRandom;
-use illoominate::importance::{Importance};
+use illoominate::importance::{Dataset, Importance};
 use illoominate::nbr::removal_impact::{split_train_eval, tifu_evaluate_removal_impact};
 use illoominate::nbr::tifuknn::io::read_baskets_file;
 use illoominate::nbr::tifuknn::TIFUKNN;
@@ -94,6 +94,12 @@ fn run_experiment(data_path: &str, app_config: &IlloominateConfig, metric_config
                 panic!("unable to read training data for SBR")
             }
         } else if let Some((basket_train, basket_valid, _basket_test)) = &datasets.basket_datasets {
+            log::error!("storing training data for SBR");
+            //
+            // // Generate timestamp
+            // let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
+            // basket_train.to_csv(format!("data/tafeng/processed/dump_train_{timestamp}.csv").as_str());
+            // basket_valid.to_csv(format!("data/tafeng/processed/dump_valid_{timestamp}.csv").as_str());
             let tifu_hyperparameters = HyperParams::from(&app_config.hpo);
             let model: TIFUKNN = TIFUKNN::new(basket_train, &tifu_hyperparameters);
 

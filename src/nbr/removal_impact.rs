@@ -114,9 +114,11 @@ pub fn split_train_eval(
 
     for (user_id, mut baskets) in all_baskets_by_user.user_baskets {
         if baskets.len() > 1 {
-            let last_basket = baskets.pop().unwrap();
+            // Sort baskets by ID in descending order and pop the basket with the largest ID
+            baskets.sort_by(|a, b| b.id.cmp(&a.id));
+            let largest_basket = baskets.remove(0);  // Now the basket with the largest ID is the first item
             train_baskets_by_user.insert(user_id, baskets);
-            heldout_baskets_by_user.push((user_id, last_basket));
+            heldout_baskets_by_user.push((user_id, largest_basket));
         }
     }
     let mut rng = thread_rng();

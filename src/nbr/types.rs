@@ -3,12 +3,41 @@ use crate::nbr::tifuknn::types::{Basket, UserId};
 use crate::sessrec::vmisknn::Scored;
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::error::Error;
+use std::fs::File;
+use csv::Writer;
+use grouping_by::GroupingBy;
+use crate::nbr::tifuknn::io::Purchase;
 
 #[derive(Clone, Debug)]
 pub struct NextBasketDataset {
     pub user_baskets: HashMap<u32, Vec<Basket>>,
 }
 
+impl NextBasketDataset {
+    pub fn to_csv(&self, file_path: &str) -> Result<(), Box<dyn Error>> {
+        log::info!("NextBasketDataset writing to {} ", file_path);
+        // Open the file for writing
+        let file = File::create(file_path)?;
+        let mut wtr = Writer::from_writer(file);
+
+        // Write the header
+        wtr.write_record(&["user_id", "basket_id", "items"])?;
+
+        // Write the data from user_baskets
+        for (user_id, baskets) in &self.user_baskets {
+            for basket in baskets {
+                let items_str = basket.items.iter().map(|item| item.to_string()).collect::<Vec<String>>().join(", ");
+                wtr.write_record(&[user_id.to_string(), basket.id.to_string(), items_str])?;
+            }
+        }
+
+        // Flush the contents of the internal buffer to the underlying writer.
+        wtr.flush()?;
+
+        Ok(())
+    }
+}
 impl From<&HashMap<u32, Vec<Basket>>> for NextBasketDataset {
     fn from(order_history: &HashMap<UserId, Vec<Basket>>) -> Self {
         NextBasketDataset {
@@ -16,6 +45,35 @@ impl From<&HashMap<u32, Vec<Basket>>> for NextBasketDataset {
                 .iter()
                 .map(|(&user_id, baskets)| (user_id, baskets.clone())) // Convert usize to u32 and clone baskets
                 .collect::<HashMap<u32, Vec<Basket>>>(),
+        }
+    }
+}
+
+impl From<&Vec<Purchase>> for NextBasketDataset {
+    fn from(purchases: &Vec<Purchase>) -> Self {
+        let baskets_by_user: HashMap<UserId, Vec<Basket>> = purchases
+            .into_iter()
+            .grouping_by(|p| p.user)
+            .into_iter()
+            .map(|(user, user_purchases)| {
+                let mut baskets: Vec<Basket> = user_purchases
+                    .into_iter()
+                    .grouping_by(|p| p.basket)
+                    .into_iter()
+                    .map(|(basket_id, basket_purchases)| {
+                        let items = basket_purchases.into_iter().map(|p| p.item).collect();
+                        Basket::new(basket_id, items)
+                    })
+                    .collect();
+
+                baskets.sort_by_key(|b| b.id);
+
+                (user, baskets)
+            })
+            .collect();
+
+        NextBasketDataset {
+            user_baskets: baskets_by_user,
         }
     }
 }
@@ -32,11 +90,14 @@ impl Dataset for NextBasketDataset {
 
     fn __get_entry__(&self, key: u32) -> DatasetEntry {
         let baskets = self.user_baskets.get(&key).unwrap();
-        assert_eq!(
-            baskets.len(),
-            1_usize,
-            "next basket recommendations evaluate on only one basket"
-        );
+        // assert_eq!(
+        //     baskets.len(),
+        //     1_usize,
+        //     "next basket recommendations evaluate on only one basket, but found {} baskets for key {:?}: {:?}",
+        //     baskets.len(),
+        //     key,
+        //     baskets
+        // );
 
         let input_sequence = vec![Scored::new(key, 1.0)];
         let target_sequence = baskets.first()

@@ -1,6 +1,6 @@
 # Illoominate - Data Importance for Recommender Systems
 
-Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) errors, offering insights into the relevance and quality of data in large-scale recommendation models. This library is tailored for sequential kNN based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
+Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
 
 # Illoominate Framework
@@ -148,6 +148,6 @@ length=20
 
 The software expects the config file for the experiment in the same directory as the data files.
 ```bash
-DATA_LOCATION=data/convergence_11306 CONFIG_FILENAME=config.toml cargo run --release --bin mc_convergence_experiment
+DATA_LOCATION=data/tafeng/processed CONFIG_FILENAME=config.toml cargo run --release --bin removal_impact
 ```
 

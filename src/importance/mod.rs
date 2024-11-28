@@ -1,7 +1,10 @@
 use std::collections::HashMap;
+use std::fs::File;
 use std::hash::{Hash, Hasher};
+use std::io::BufWriter;
 use std::marker::{Send, Sync};
 use std::sync::Mutex;
+use std::io::Write;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::prelude::{IntoParallelIterator, ParallelSliceMut};
@@ -13,7 +16,7 @@ use crate::sessrec::vmisknn::Scored;
 pub mod candidate_neighbors;
 pub mod k_loo;
 pub mod k_mc_shapley;
-pub mod tmc_utils;
+pub mod mc_utils;
 
 pub trait RetrievalBasedModel {
     fn k(&self) -> usize;
