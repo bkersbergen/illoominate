@@ -3,16 +3,17 @@
 Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
 
+### Key Features
+
+- Scalable: Optimized for large datasets with millions of interactions.
+- Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
+- Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
+- Visualization: Easily visualize the distribution of Data Shapley values to analyze data quality and identify potential issues.
+- Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
+
+
 # Illoominate Framework
 This repository contains the code for the illoominate framework, which accompanies the scientific manuscript which is under review.
-
-## Important Notice
-This code is made available **exclusively for peer review purposes**.
-
-- Upon acceptance of the manuscript, this repository including all code and experiment results described in the paper will be released under the open-source Apache License 2.0.
-
-## Copyright
-© 2024 Barrie Kersbergen. All rights reserved.
 
 ## Overview
 
@@ -31,9 +32,11 @@ By leveraging the Data Shapley value, Illoominate helps data scientists and engi
 pip install illoominate
 `
 
-### Example Use Case: Computing Data Shapley Values
 
-To compute Data Shapley values for a specific recommendation model (e.g., VMIS-kNN), use the `illoominate.data_shapley_values()` function. This function calculates the impact of each data point in your training data based on a specified recommendation model and evaluation metric.
+# Example Use Cases
+### Example 1: Computing Data Shapley Values for Session-Based Recommendations
+
+Illoominate computes Data Shapley values to assess the contribution of each data point to the recommendation performance. Below is an example using the public _Now Playing 1M_ dataset.
 
 ```python
 import illoominate
@@ -87,23 +90,68 @@ print(corrupt_sessions)
 961 rows × 4 columns
 ```
 
+### Example 2: Data Shapley values for Next-Basket Recommendations with TIFU-kNN
+
+To compute Data Shapley values for next-basket recommendations, use the _Tafeng_ dataset.
 
 
-### Key Features
+```python
+# Load training and validation datasets
+train_df = pd.read_csv('data/tafeng/processed/train.csv', sep='\t')
+validation_df = pd.read_csv('data/tafeng/processed/valid.csv', sep='\t')
 
-- Scalable: Optimized for large datasets with millions of interactions.
-- Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
-- Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
-- Visualization: Easily visualize the distribution of Data Shapley values to analyze data quality and identify potential issues.
-- Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
+# Compute Data Shapley values
+shapley_values = illoominate.data_shapley_values(
+train_df=train_df,
+validation_df=validation_df,
+model='vmis',
+metric='mrr@20',
+params={'m':500, 'k':100, 'seed': 42, 'convergence_threshold': .1},
+)
 
+
+# Visualize the distribution of Data Shapley values
+plt.hist(shapley_values['score'], density=False, bins=100)
+plt.title('Distribution of Data Shapley Values')
+plt.yscale('log')
+plt.ylabel('Frequency')
+plt.xlabel('Data Shapley Values')
+plt.savefig('images/shapley.png', dpi=300)
+plt.show()
+```
+![Distribution of Data Shapley Values](data/tafeng/processed/shapley.png)
+
+### Example 3: Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN
+
+```python
+# Load training and validation datasets
+train_df = pd.read_csv('data/tafeng/processed/train.csv', sep='\t')
+validation_df = pd.read_csv('data/tafeng/processed/valid.csv', sep='\t')
+
+#  Data Leave-One-Out values
+loo_values = illoominate.data_loo_values(
+    train_df=train_df,
+    validation_df=validation_df,
+    model='tifu',
+    metric='ndcg@10',
+    params={'m':7, 'k':100, 'r_b': 0.9, 'r_g': 0.7, 'alpha': 0.7, 'seed': 42},
+)
+
+# Visualize the distribution of Data Leave-One-Out Values
+plt.hist(shapley_values['score'], density=False, bins=100)
+plt.title('Distribution of Data LOO Values')
+plt.yscale('log')
+plt.ylabel('Frequency')
+plt.xlabel('Data Leave-One-Out Values')
+plt.savefig('images/loo.png', dpi=300)
+plt.show()
+```
+![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](data/tafeng/processed/loo.png)
 
 
 ### How KMC-Shapley Optimizes DSV Estimation
 
-KMC-Shapley (K-nearest Monte Carlo Shapley) is a custom-tailored, scalable variant of the Data Shapley value computation, designed specifically for sequential kNN-based recommendation systems. 
-KMC-Shapley improves the efficiency of Truncated Data Shapley (TMC-Shapley) by leveraging the sparsity and nearest-neighbor characteristics of the data, making it feasible to apply Data Shapley values in large-scale recommender systems.
-By only computing the utility change when necessary (i.e., when a neighbor's addition impacts the top-k set), KMC-Shapley skips redundant computations, significantly reducing the time complexity.
+KMC-Shapley (K-nearest Monte Carlo Shapley) enhances the efficiency of Data Shapley value computations by leveraging the sparsity and nearest-neighbor structure of the data. It avoids redundant computations by only evaluating utility changes for impactful neighbors, reducing computational overhead and enabling scalability to large datasets.
 
 
  
@@ -151,3 +199,11 @@ The software expects the config file for the experiment in the same directory as
 DATA_LOCATION=data/tafeng/processed CONFIG_FILENAME=config.toml cargo run --release --bin removal_impact
 ```
 
+## Licensing and Copyright
+This code is made available exclusively for peer review purposes.
+Upon acceptance of the accompanying manuscript, the repository will be released under the Apache License 2.0.
+© 2024 Barrie Kersbergen. All rights reserved.
+
+## Notes
+For any queries or further support, please refer to the scientific manuscript under review.
+Contributions and discussions are welcome after open-source release.
