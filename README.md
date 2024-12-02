@@ -70,7 +70,7 @@ plt.show()
 ```
 ### Sample Output
 The distribution of Data Shapley values can be visualized or used for further analysis.
-![Distribution of Data Shapley Values](images/nowplaying1m_shapley.png)
+![Distribution of Data Shapley Values](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/images/nowplaying1m_shapley.png)
 
 ```python
 print(corrupt_sessions)
@@ -119,7 +119,7 @@ plt.xlabel('Data Shapley Values')
 plt.savefig('images/shapley.png', dpi=300)
 plt.show()
 ```
-![Distribution of Data Shapley Values](data/tafeng/processed/shapley.png)
+![Distribution of Data Shapley Values](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/shapley.png)
 
 ### Example 3: Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN
 
@@ -146,7 +146,7 @@ plt.xlabel('Data Leave-One-Out Values')
 plt.savefig('images/loo.png', dpi=300)
 plt.show()
 ```
-![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](data/tafeng/processed/loo.png)
+![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/loo.png)
 
 
 ### How KMC-Shapley Optimizes DSV Estimation
