@@ -8,7 +8,6 @@ Illoominate is a scalable library designed to compute data importance scores for
 - Scalable: Optimized for large datasets with millions of interactions.
 - Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
 - Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
-- Visualization: Easily visualize the distribution of Data Shapley values to analyze data quality and identify potential issues.
 - Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
 
 
