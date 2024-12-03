@@ -55,9 +55,6 @@ shapley_values = illoominate.data_shapley_values(
     params={'m':100, 'k':100, 'seed': 42},  # Model-specific parameters
 )
 
-negative = shapley_values[shapley_values.score < 0]
-corrupt_sessions = train_df.merge(negative, on='session_id')
-
 # Visualize the distribution of Data Shapley values
 plt.hist(shapley_values['score'], density=False, bins=100)
 plt.title('Distribution of Data Shapley Values')
@@ -66,6 +63,12 @@ plt.ylabel('Frequency')
 plt.xlabel('Data Shapley Values')
 plt.savefig('images/shapley.png', dpi=300)
 plt.show()
+
+# Identify postentially corrupted sessions
+negative = shapley_values[shapley_values.score < 0]
+corrupt_sessions = train_df.merge(negative, on='session_id')
+
+
 ```
 ### Sample Output
 The distribution of Data Shapley values can be visualized or used for further analysis.
