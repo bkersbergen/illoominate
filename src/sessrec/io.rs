@@ -7,6 +7,7 @@ use std::io::{self, BufRead};
 use polars_core::datatypes::AnyValue;
 use pyo3::PyErr;
 use polars::prelude::*;
+use pyo3_polars::PyDataFrame;
 use crate::sessrec::types::{Interaction, ItemId, SessionDataset, SessionId, Time};
 
 impl SessionDataset {
@@ -75,7 +76,36 @@ pub fn read_data(path_to_csvfile: &str) -> Vec<Interaction> {
     training_data.collect()
 }
 
+pub fn get_sustainable_items(df: DataFrame) -> HashSet<ItemId> {
+    // Get the item_id column or log an error and return an empty HashSet
+    let item_id_col = match df.column("item_id") {
+        Ok(col) => col,
+        Err(e) => {
+            log::error!("Failed to retrieve 'item_id' column: {}", e);
+            return HashSet::new();
+        }
+    };
 
+    // Initialize a HashSet to store unique item IDs
+    let mut item_set = HashSet::new();
+
+    // Iterate over the item_id column and collect unique IDs
+    for i in 0..item_id_col.len() {
+        match item_id_col.get(i) {
+            Ok(AnyValue::Int64(val)) => {
+                // Convert the value to ItemId and insert into the set
+                if let Ok(item_id) = val.try_into() {
+                    item_set.insert(item_id);
+                } else {
+                    log::error!("Failed to convert value at index {} to ItemId", i);
+                }
+            }
+            _ => log::error!("Invalid value at index {} in 'item_id' column", i),
+        }
+    }
+
+    item_set
+}
 
 pub fn polars_to_interactions(df: DataFrame) -> Result<Vec<Interaction>, PyErr> {
 

@@ -11,9 +11,10 @@ use crate::nbr::tifuknn::TIFUKNN;
 use crate::nbr::tifuknn::types::HyperParams;
 use crate::nbr::types::NextBasketDataset;
 use crate::sessrec::io::polars_to_interactions;
+use crate::sessrec::io::get_sustainable_items;
 use crate::sessrec::metrics::{MetricConfig, MetricFactory, MetricType};
 use crate::sessrec::metrics::product_info::ProductInfo;
-use crate::sessrec::types::{Interaction, SessionDataset};
+use crate::sessrec::types::{Interaction, ItemId, SessionDataset};
 use crate::sessrec::vmisknn::VMISKNN;
 
 pub mod baselines;
@@ -71,10 +72,11 @@ fn debug_sbr(pydf: PyDataFrame) -> PyResult<PyDataFrame> {
 
 #[pyfunction]
 fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metric: &str,
-                params: HashMap<String, f64>) -> PyResult<PyDataFrame> {
+                params: HashMap<String, f64>, sustainable: PyDataFrame) -> PyResult<PyDataFrame> {
 
     let data_df: DataFrame = data.into();
     let validation_df: DataFrame = validation.into();
+    let sustainable_df: DataFrame = sustainable.into();
 
     let is_sbr = match model.to_lowercase().as_str().trim() {
         "vmis" => true,
@@ -101,14 +103,21 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
 
     let metric_config = MetricConfig {
         importance_metric: metric_type.clone(),
-        evaluation_metrics: vec![metric_type],
+        evaluation_metrics: vec![metric_type.clone()],
         length: at_k,
         mrr_alpha: 0.8,
     };
 
-    let product_info = ProductInfo::new(HashSet::new());
-    let metric_factory = MetricFactory::new(&metric_config, product_info);
+    let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
 
+    // Check if the metric type requires sustainable products, and if the set is empty, throw an error
+    if (matches!(metric_type, MetricType::ResponsibleMrr) || matches!(metric_type, MetricType::SustainabilityCoverage))
+        && sustainable_products.is_empty() {
+        panic!("Argument `sustainable_df` must contain a list of `item_id` values and must not be empty for this metric type.");
+    }
+
+    let product_info = ProductInfo::new(sustainable_products);
+    let metric_factory = MetricFactory::new(&metric_config, product_info);
 
     let convergence_threshold: f64 = params.get("convergence_threshold").cloned().unwrap_or(0.1);
     let convergence_check_every: usize = params.get("convergence_check_every").map(|&v| v as usize).unwrap_or(10);
@@ -208,10 +217,11 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
 
 #[pyfunction]
 fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metric: &str,
-                       params: HashMap<String, f64>) -> PyResult<PyDataFrame> {
+                       params: HashMap<String, f64>, sustainable: PyDataFrame) -> PyResult<PyDataFrame> {
 
     let data_df: DataFrame = data.into();
     let validation_df: DataFrame = validation.into();
+    let sustainable_df: DataFrame = sustainable.into();
 
     let is_sbr = match model.to_lowercase().as_str() {
         "vmis" => true,
@@ -238,12 +248,19 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
 
     let metric_config = MetricConfig {
         importance_metric: metric_type.clone(),
-        evaluation_metrics: vec![metric_type],
+        evaluation_metrics: vec![metric_type.clone()],
         length: at_k,
         mrr_alpha: 0.8,
     };
 
-    let product_info = ProductInfo::new(HashSet::new());
+    let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
+
+    // Check if the metric type requires sustainable products, and if the set is empty, throw an error
+    if (matches!(metric_type, MetricType::ResponsibleMrr) || matches!(metric_type, MetricType::SustainabilityCoverage))
+        && sustainable_products.is_empty() {
+        panic!("Argument `sustainable_df` must contain a list of `item_id` values and must not be empty for this metric type.");
+    }
+    let product_info = ProductInfo::new(sustainable_products);
     let metric_factory = MetricFactory::new(&metric_config, product_info);
 
     let k_loo_algorithm = KLoo::new();

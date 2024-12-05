@@ -64,7 +64,7 @@ plt.xlabel('Data Shapley Values')
 plt.savefig('images/shapley.png', dpi=300)
 plt.show()
 
-# Identify postentially corrupted sessions
+# Identify potentially corrupted sessions
 negative = shapley_values[shapley_values.score < 0]
 corrupt_sessions = train_df.merge(negative, on='session_id')
 
@@ -150,6 +150,67 @@ plt.show()
 ```
 ![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/loo.png)
 
+
+### Example 4: Increasing the Sustainability of Recommendations via Data Pruning
+
+To measure the sustainability of recommendations, Illoominate supports specialized metrics such as responsiblemrr and sustainabilitycoverage.
+
+Illoominate supports metrics to include a sustainability term that expresses the number of sustainable products in a given recommendation. SustainableMRR@t as `0.8·MRR@t + 0.2· st` . This utility combines the MRR@t with the “sustainability coverage term” `st` , where `s` denotes the number of sustainable items among the `t` recommended items.
+
+The function call remains the same, you only change the metric to `responsiblemrr` or `sustainabilitycoverage` and provide a list of items that are considered sustainable.
+
+```python
+import illoominate
+import matplotlib.pyplot as plt
+import pandas as pd
+
+train_df = pd.read_csv('data/rsc15_100k/processed/train.csv', sep='\t')
+validation_df = pd.read_csv('data/rsc15_100k/processed/valid.csv', sep='\t')
+# rsc15 items considered sustainable. (Randomly chosen for this dataset) 
+sustainable_df = pd.read_csv('data/rsc15_100k/processed/sustainable.csv', sep='\t')
+
+importance = illoominate.data_loo_values(
+    train_df=train_df,
+    validation_df=validation_df,
+    model='vmis',
+    metric='responsiblemrr@20',
+    params={'m':500, 'k':100, 'seed': 42},
+    sustainable_df=sustainable_df,
+)
+
+plt.hist(importance['score'], density=False, bins=100)
+plt.title('Distribution of Data Leave-One-Out Values')
+plt.yscale('log')
+plt.ylabel('Frequency')
+plt.xlabel('Data Leave-One-Out Values')
+plt.savefig('data/rsc15_100k/processed/loo_responsiblemrr.png', dpi=300)
+plt.show()
+
+# Prune the training data
+threshold = importance['score'].quantile(0.05)  # 5th percentile threshold
+filtered_importance_values = importance[importance['score'] >= threshold]
+train_df_pruned = train_df.merge(filtered_importance_values, on='session_id')
+```
+
+![Distribution of Leave-One-Out Values using ResponsibleMRR metric](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/rsc15_100k/processed/loo_responsiblemrr.png)
+
+This demonstrates the pruned training dataset, where less impactful or irrelevant interactions have been removed to focus on high-quality data points for model training.
+
+```python
+print(train_df_pruned)
+	session_id	item_id	timestamp	score
+0	3	214716935	1.396437e+09	0.000000
+1	3	214832672	1.396438e+09	0.000000
+2	7	214826835	1.396414e+09	-0.000003
+3	7	214826715	1.396414e+09	-0.000003
+4	11	214821275	1.396515e+09	0.000040
+...	...	...	...	...
+47933	31808	214820441	1.396508e+09	0.000000
+47934	31812	214662819	1.396365e+09	-0.000002
+47935	31812	214836765	1.396365e+09	-0.000002
+47936	31812	214836073	1.396365e+09	-0.000002
+47937	31812	214662819	1.396365e+09	-0.000002
+```
 
 ### How KMC-Shapley Optimizes DSV Estimation
 
