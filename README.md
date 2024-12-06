@@ -283,7 +283,7 @@ Trigger a build using the CI pipeline in Github, via either:
 Download the wheels from github and place them in a directory.
 Navigate to that directory and then
 ```bash
-twine upload dist/*
+twine upload dist/* -u __token__ -p pypi-SomeSecretAPIToken123
 ```
 This will upload all files in the `dist/` directory to PyPI. `dist/` is the directory where the wheel files will be located after you unpack the artifact from GitHub Actions.
 
