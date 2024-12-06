@@ -4,8 +4,8 @@ build-backend = "maturin"
 
 [project]
 name = "illoominate"
-version = "0.1.6"
-description = "A Rust-powered library for scoring data importance in sequential knn-recommendation systems"
+version = "0.1.7"
+description = "A scalable library designed to compute data importance scores for interaction data in sequential kNN-based recommender systems."
 readme = "README.md"
 #license = "Apache-2.0"
 classifiers = [
