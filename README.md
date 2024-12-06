@@ -270,3 +270,24 @@ Upon acceptance of the accompanying manuscript, the repository will be released 
 ## Notes
 For any queries or further support, please refer to the scientific manuscript under review.
 Contributions and discussions are welcome after open-source release.
+
+
+# Releasing a new version of Illoominate
+Increment the version number in pyproject.toml
+
+Trigger a build using the CI pipeline in Github, via either:
+* A push is made to the main branch with a tag matching *-rc* (e.g., v1.0.0-rc1).
+* A pull request is made to the main branch.
+* A push occurs on a branch that starts with branch-*.
+
+Download the wheels from github and place them in a directory.
+Navigate to that directory and then
+```bash
+twine upload dist/*
+```
+This will upload all files in the `dist/` directory to PyPI. `dist/` is the directory where the wheel files will be located after you unpack the artifact from GitHub Actions.
+
+
+
+
+
