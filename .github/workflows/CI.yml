@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build Python package
-        run: maturin build --release --strip --features substrait
+        run: maturin build --release
 
       - name: List Linux wheels
         run: find target/wheels/
@@ -52,7 +52,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build Python package
-        run: maturin build --release --strip --features substrait
+        run: maturin build --release
 
       - name: List Mac wheels
         run: find target/wheels/
