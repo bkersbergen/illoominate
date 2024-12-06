@@ -25,11 +25,24 @@ By leveraging the Data Shapley value, Illoominate helps data scientists and engi
 
 
 ## Installation
-- Python >= 3.10
+Ensure **Python >= 3.10** is installed. 
+
+### Installing Illoominate
+Illoominate can be installed via pip from [PyPI](https://pypi.org/project/illoominate/).
 
 `
 pip install illoominate
 `
+
+### Note
+It is recommended to install and run Illoominate from a virtual environment.
+If you are using a virtual environment, activate it before running the installation command.
+
+```
+python -m venv venv       # Create the virtual environment (Linux/macOS/Windows)   
+source venv/bin/activate  # Activate the virtualenv (Linux/macOS)  
+venv\Scripts\activate     # Activate the virtualenv (Windows)  
+```
 
 
 # Example Use Cases
