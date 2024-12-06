@@ -5,7 +5,7 @@ on:
     branches: ["main"]
   push:
     tags: ["*-rc*"]
-    branches: ["branch-*"]
+    branches: ["main", "master", "branch-*"]
 
 jobs:
   build:
