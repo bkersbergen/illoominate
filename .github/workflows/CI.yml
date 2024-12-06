@@ -8,7 +8,8 @@ on:
     branches: ["main", "master", "branch-*"]
 
 jobs:
-  build:
+  build-linux:
+    name: Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +81,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build Python package
-        run: maturin build --release --strip --features substrait
+        run: maturin build --release
 
       - name: List Windows wheels
         run: dir target\wheels\
@@ -95,7 +96,7 @@ jobs:
   merge-build-artifacts:
     runs-on: ubuntu-latest
     needs:
-      - build
+      - build-linux
       - build-macos
       - build-windows
     steps:
