@@ -293,7 +293,7 @@ Trigger a build using the CI pipeline in Github, via either:
 * A pull request is made to the main branch.
 * A push occurs on a branch that starts with branch-*.
 
-Download the wheels from github and place them in a directory.
+Download the wheels mentioned in the CI job output and place them in a directory.
 Navigate to that directory and then
 ```bash
 twine upload dist/* -u __token__ -p pypi-SomeSecretAPIToken123
