@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::sessrec::metrics::{MetricConfig, MetricType};
+use crate::metrics::{MetricConfig, MetricType};
 use config::{Config, File};
 use log::LevelFilter;
 use serde::Deserialize;
@@ -80,14 +80,14 @@ impl IlloominateConfig {
 }
 
 pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
-    let metric_type = match app_config.metric.name.to_lowercase().as_str() {
+    let metric_type = match app_config.metric.name.trim().to_lowercase().as_str() {
         "f1score" => MetricType::F1score,
         "hitrate" => MetricType::HitRate,
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::ResponsibleMrr,
-        "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
+        "sustainablemrr" => MetricType::SustainableMrr,
+        "sustainabilitycoverage" => MetricType::SustainabilityCoverageTerm,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
     };
@@ -97,7 +97,7 @@ pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
         importance_metric: metric_type.clone(),
         evaluation_metrics: vec![metric_type.clone()],
         length: app_config.metric.length,
-        mrr_alpha: 0.8,
+        alpha: 0.8,
     }
 }
 

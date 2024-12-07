@@ -1,21 +1,24 @@
-use crate::sessrec::metrics::product_info::ProductInfo;
-use crate::sessrec::metrics::Metric;
+use crate::metrics::product_info::ProductInfo;
+use crate::metrics::Metric;
 use crate::sessrec::types::ItemId;
 use crate::sessrec::vmisknn::Scored;
 use std::cmp;
 use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
-pub struct SustainabilityCoverage<'a> {
+pub struct St<'a> {
     sum_of_scores: f64,
     qty: usize,
     product_info: &'a ProductInfo,
     length: usize,
 }
 
-impl<'a> SustainabilityCoverage<'a> {
+impl<'a> St<'a> {
     pub fn new(product_info: &'a ProductInfo, length: usize) -> Self {
-        SustainabilityCoverage {
+        if product_info.sustainable_products.is_empty() {
+            panic!("Argument `product_info` must contain a list of item_id values and must not be empty for this metric type.");
+        }
+        St {
             sum_of_scores: 0_f64,
             qty: 0,
             product_info,
@@ -24,7 +27,7 @@ impl<'a> SustainabilityCoverage<'a> {
     }
 }
 
-impl<'a> Metric for SustainabilityCoverage<'a> {
+impl<'a> Metric for St<'a> {
     fn add(&mut self, recommendations: &Vec<Scored>, _next_items: &Vec<Scored>) {
         self.qty += 1;
 
@@ -40,7 +43,7 @@ impl<'a> Metric for SustainabilityCoverage<'a> {
     }
 
     fn get_name(&self) -> String {
-        format!("SustainabilityCoverage@{}", self.length)
+        format!("St@{}", self.length)
     }
 
     fn reset(&mut self) {
@@ -69,19 +72,19 @@ impl<'a> Metric for SustainabilityCoverage<'a> {
 }
 
 #[cfg(test)]
-mod sustainabilitycoverage_test {
+mod St_test {
     use itertools::Itertools;
     use super::*;
     use crate::sessrec::types::ItemId;
 
     #[test]
-    fn should_calculate_sustainabilitycoverage() {
+    fn should_calculate_sustainability_coverage_term() {
         let sustainable_products: HashSet<ItemId> = vec![5, 10, 15].into_iter().collect();
         let qty_sustainable_items_also_in_recommendations = sustainable_products.len();
         let product_info = ProductInfo::new(sustainable_products);
 
         let length = 20;
-        let mut under_test = SustainabilityCoverage::new(&product_info, length);
+        let mut under_test = St::new(&product_info, length);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         ].iter()
@@ -100,7 +103,7 @@ mod sustainabilitycoverage_test {
         let sustainable_products: HashSet<ItemId> = vec![5, 10, 15].into_iter().collect();
         let product_info = ProductInfo::new(sustainable_products);
         let length = 21;
-        let mut under_test = SustainabilityCoverage::new(&product_info, length);
+        let mut under_test = St::new(&product_info, length);
         let recommendations: Vec<Scored> = vec![];
         let _next_items: Vec<Scored> = vec![1, 2, 3].iter()
             .map(|&id| Scored::new(id, 1.0))

@@ -6,7 +6,7 @@ use chrono::Local;
 use env_logger::Builder;
 use log::LevelFilter;
 use illoominate::conf::illoominateconfig::{create_metric_config, IlloominateConfig};
-use illoominate::sessrec::metrics::{MetricConfig, MetricFactory, MetricType};
+use illoominate::metrics::{MetricConfig, MetricFactory, MetricType};
 use std::io::Write;
 use rand::prelude::{SliceRandom, StdRng};
 use rand::SeedableRng;
@@ -16,14 +16,14 @@ use illoominate::sessrec::io;
 use illoominate::sessrec::types::{ItemId, SessionDataset};
 use illoominate::sessrec::vmisknn::VMISKNN;
 use rand::seq::IteratorRandom;
-use illoominate::importance::{Dataset, Importance};
+use illoominate::importance::{Importance};
 use illoominate::nbr::removal_impact::{split_train_eval, tifu_evaluate_removal_impact};
 use illoominate::nbr::tifuknn::io::read_baskets_file;
 use illoominate::nbr::tifuknn::TIFUKNN;
 use illoominate::nbr::tifuknn::types::{HyperParams};
 use illoominate::nbr::types::NextBasketDataset;
 use illoominate::sessrec::io::read_sustainable_products_info;
-use illoominate::sessrec::metrics::product_info::ProductInfo;
+use illoominate::metrics::product_info::ProductInfo;
 use illoominate::sessrec::removal_impact::{create_file, vmis_evaluate_removal_impact};
 
 fn main() {
@@ -315,10 +315,10 @@ pub fn create_metric_factory<'a>(
 ) -> MetricFactory<'a> {
     let sustainable_products: HashSet<ItemId> = if metric_config
         .evaluation_metrics
-        .contains(&MetricType::ResponsibleMrr)
+        .contains(&MetricType::SustainableMrr)
         || metric_config
         .evaluation_metrics
-        .contains(&MetricType::SustainabilityCoverage)
+        .contains(&MetricType::SustainabilityCoverageTerm)
     {
         read_sustainable_products_info(&format!("{}/__sustainable_mapped_items.csv.csv", data_path))
     } else {

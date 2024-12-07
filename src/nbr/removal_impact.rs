@@ -2,7 +2,7 @@ use crate::importance::{Dataset, evaluate_dataset};
 use crate::nbr::tifuknn::types::{HyperParams, UserId};
 use crate::nbr::tifuknn::TIFUKNN;
 use crate::nbr::types::NextBasketDataset;
-use crate::sessrec::metrics::MetricFactory;
+use crate::metrics::MetricFactory;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use std::cmp::max;

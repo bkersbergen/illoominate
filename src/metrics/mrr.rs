@@ -1,4 +1,4 @@
-use crate::sessrec::metrics::Metric;
+use crate::metrics::Metric;
 use crate::sessrec::vmisknn::Scored;
 use std::cmp;
 

@@ -1,4 +1,4 @@
-use crate::sessrec::metrics::MetricFactory;
+use crate::metrics::MetricFactory;
 use crate::sessrec::types::SessionDataset;
 
 pub mod k_mc_shapley;

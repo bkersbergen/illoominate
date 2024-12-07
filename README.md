@@ -166,11 +166,9 @@ plt.show()
 
 ### Example 4: Increasing the Sustainability of Recommendations via Data Pruning
 
-To measure the sustainability of recommendations, Illoominate supports specialized metrics such as responsiblemrr and sustainabilitycoverage.
-
 Illoominate supports metrics to include a sustainability term that expresses the number of sustainable products in a given recommendation. SustainableMRR@t as `0.8·MRR@t + 0.2· st` . This utility combines the MRR@t with the “sustainability coverage term” `st` , where `s` denotes the number of sustainable items among the `t` recommended items.
 
-The function call remains the same, you only change the metric to `responsiblemrr` or `sustainabilitycoverage` and provide a list of items that are considered sustainable.
+The function call remains the same, you only change the metric to `SustainableMRR`, `SustainableNDCG` or `st` (sustainability coverage term) and provide a list of items that are considered sustainable.
 
 ```python
 import illoominate
@@ -186,7 +184,7 @@ importance = illoominate.data_loo_values(
     train_df=train_df,
     validation_df=validation_df,
     model='vmis',
-    metric='responsiblemrr@20',
+    metric='sustainablemrr@20',
     params={'m':500, 'k':100, 'seed': 42},
     sustainable_df=sustainable_df,
 )
@@ -224,6 +222,31 @@ print(train_df_pruned)
 47936	31812	214836073	1.396365e+09	-0.000002
 47937	31812	214662819	1.396365e+09	-0.000002
 ```
+
+### Supported Recommendation models and Metrics
+
+`model` (str): Name of the model to use. Supported values:
+- `vmis`: Session-based recommendation [VMIS-kNN](https://dl.acm.org/doi/10.1145/3514221.3517901). 
+- `tifu`: Next-basket recommendation [TIFU-kNN](https://dl.acm.org/doi/10.1145/3397271.3401066).
+
+`metric` (str): Evaluation metric to calculate importance. Supported values:
+- `mrr`
+- `ndcg`
+- `st`
+- `hitrate`
+- `f1`
+- `precision`
+- `recall`
+- `sustainablemrr`
+- `sustainablendcg`
+
+`params` (dict): Model specific parameters
+
+`sustainable_df` (pd.DataFrame):
+- This argument is only mandatory for the sustainable related metrics `st`, `sustainablemrr` or `sustainablendcg`
+
+
+
 
 ### How KMC-Shapley Optimizes DSV Estimation
 

@@ -1,14 +1,15 @@
-use crate::sessrec::metrics::f1metric::F1score;
-use crate::sessrec::metrics::hitrate::HitRate;
-use crate::sessrec::metrics::mrr::Mrr;
-use crate::sessrec::metrics::ndcg::Ndcg;
-use crate::sessrec::metrics::precision::Precision;
-use crate::sessrec::metrics::product_info::ProductInfo;
-use crate::sessrec::metrics::recall::Recall;
-use crate::sessrec::metrics::responsible_mrr::ResponsibleMrr;
+use crate::metrics::f1metric::F1score;
+use crate::metrics::hitrate::HitRate;
+use crate::metrics::mrr::Mrr;
+use crate::metrics::ndcg::Ndcg;
+use crate::metrics::precision::Precision;
+use crate::metrics::product_info::ProductInfo;
+use crate::metrics::recall::Recall;
+use crate::metrics::sustainable_mrr::SustainableMrr;
 use serde::{Deserialize, Serialize};
 // use crate::sessrec::metrics::responsible_mrr::ResponsibleMrr;
-use crate::sessrec::metrics::sustainabilityratio::SustainabilityCoverage;
+use crate::metrics::st::St;
+use crate::metrics::sustainable_ndcg::SustainableNdcg;
 use crate::sessrec::vmisknn::Scored;
 
 pub mod f1metric;
@@ -18,8 +19,9 @@ pub mod ndcg;
 pub mod precision;
 pub mod product_info;
 pub mod recall;
-pub mod responsible_mrr;
-pub mod sustainabilityratio;
+pub mod st;
+pub mod sustainable_mrr;
+pub mod sustainable_ndcg;
 
 pub trait Metric {
     fn add(&mut self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>);
@@ -37,8 +39,9 @@ pub enum MetricType {
     MRR,
     Precision,
     Recall,
-    ResponsibleMrr,
-    SustainabilityCoverage,
+    SustainableMrr,
+    SustainableNdcg,
+    SustainabilityCoverageTerm,
     Ndcg,
 }
 
@@ -47,7 +50,7 @@ pub struct MetricConfig {
     pub importance_metric: MetricType,
     pub evaluation_metrics: Vec<MetricType>,
     pub length: usize,
-    pub mrr_alpha: f64,
+    pub alpha: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -83,12 +86,17 @@ impl<'a> MetricFactory<'a> {
             MetricType::MRR => Box::new(Mrr::new(self.config.length)),
             MetricType::Precision => Box::new(Precision::new(self.config.length)),
             MetricType::Recall => Box::new(Recall::new(self.config.length)),
-            MetricType::ResponsibleMrr => Box::new(ResponsibleMrr::new(
+            MetricType::SustainableMrr => Box::new(SustainableMrr::new(
                 &self.product_info,
-                self.config.mrr_alpha,
+                self.config.alpha,
                 self.config.length,
             )),
-            MetricType::SustainabilityCoverage => Box::new(SustainabilityCoverage::new(
+            MetricType::SustainableNdcg => Box::new(SustainableNdcg::new(
+                &self.product_info,
+                self.config.alpha,
+                self.config.length,
+            )),
+            MetricType::SustainabilityCoverageTerm => Box::new(St::new(
                 &self.product_info,
                 self.config.length,
             )),

@@ -1,56 +1,56 @@
-use crate::sessrec::metrics::mrr::Mrr;
-use crate::sessrec::metrics::product_info::ProductInfo;
-use crate::sessrec::metrics::sustainabilityratio::SustainabilityCoverage;
-use crate::sessrec::metrics::Metric;
-use crate::sessrec::vmisknn::Scored;
+use crate::metrics::mrr::Mrr;
+use crate::metrics::product_info::ProductInfo;
+use crate::metrics::st::St;
+use crate::metrics::Metric;
+use crate::metrics::Scored;
 
 #[derive(Debug, Clone)]
-pub struct ResponsibleMrr<'a> {
+pub struct SustainableMrr<'a> {
     mrr: Mrr,
-    sustainability_coverage: SustainabilityCoverage<'a>,
-    mrr_alpha: f64,
+    sustainability_coverage_term: St<'a>,
+    alpha: f64,
     length: usize,
 }
 
-impl<'a> ResponsibleMrr<'a> {
-    pub fn new(product_info: &'a ProductInfo, mrr_alpha: f64, length: usize) -> Self {
-        ResponsibleMrr {
+impl<'a> SustainableMrr<'a> {
+    pub fn new(product_info: &'a ProductInfo, alpha: f64, length: usize) -> Self {
+        SustainableMrr {
             mrr: Mrr::new(length),
-            sustainability_coverage: SustainabilityCoverage::new(product_info, length),
-            mrr_alpha,
+            sustainability_coverage_term: St::new(product_info, length),
+            alpha: alpha,
             length,
         }
     }
 }
 
-impl Metric for ResponsibleMrr<'_> {
+impl Metric for SustainableMrr<'_> {
     fn add(&mut self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>) {
         self.mrr.add(recommendations, next_items);
-        self.sustainability_coverage
+        self.sustainability_coverage_term
             .add(recommendations, next_items);
     }
 
     fn result(&self) -> f64 {
-        let mrr_weighted = self.mrr.result() * self.mrr_alpha;
-        let sustainable_coverage = self.sustainability_coverage.result() * (1.0 - self.mrr_alpha);
+        let mrr_weighted = self.mrr.result() * self.alpha;
+        let sustainable_coverage = self.sustainability_coverage_term.result() * (1.0 - self.alpha);
         mrr_weighted + sustainable_coverage
     }
 
     fn get_name(&self) -> String {
-        format!("ResponsibleMrr@{}", self.length)
+        format!("SustainableMrr@{}", self.length)
     }
 
     fn reset(&mut self) {
         self.mrr.reset();
-        self.sustainability_coverage.reset()
+        self.sustainability_coverage_term.reset()
     }
 
     fn compute(&self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>) -> f64 {
-        let mrr_weighted_score = self.mrr.compute(recommendations, next_items) * self.mrr_alpha;
+        let mrr_weighted_score = self.mrr.compute(recommendations, next_items) * self.alpha;
         let sustainability_coverage_weighted_score = self
-            .sustainability_coverage
+            .sustainability_coverage_term
             .compute(recommendations, next_items)
-            * (1.0 - self.mrr_alpha);
+            * (1.0 - self.alpha);
         mrr_weighted_score + sustainability_coverage_weighted_score
     }
 }
@@ -79,7 +79,7 @@ mod responsible_mrr_test {
             .collect_vec();
 
         let mrr_alpha = 0.8;
-        let mut sustain_mrr = ResponsibleMrr::new(&product_info, mrr_alpha, length);
+        let mut sustain_mrr = SustainableMrr::new(&product_info, mrr_alpha, length);
         sustain_mrr.add(&recommendations, &actual_next_items);
 
         assert_eq!(format!("ResponsibleMrr@{length}"), sustain_mrr.get_name());
@@ -94,7 +94,7 @@ mod responsible_mrr_test {
         let length = 20;
 
         let mrr_alpha = 0.8;
-        let mymetric = ResponsibleMrr::new(&product_info, mrr_alpha, length);
+        let mymetric = SustainableMrr::new(&product_info, mrr_alpha, length);
         let recommendations: Vec<Scored> = vec![];
         let actual_next_items: Vec<Scored> = vec![1, 2].iter()
             .map(|&id| Scored::new(id, 1.0))

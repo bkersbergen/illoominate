@@ -1,5 +1,5 @@
 use crate::importance::{evaluate_dataset, Dataset};
-use crate::sessrec::metrics::MetricFactory;
+use crate::metrics::MetricFactory;
 use crate::sessrec::types::{SessionDataset, SessionId};
 use crate::sessrec::vmisknn::VMISKNN;
 

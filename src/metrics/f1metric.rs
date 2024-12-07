@@ -1,6 +1,6 @@
-use crate::sessrec::metrics::precision::Precision;
-use crate::sessrec::metrics::recall::Recall;
-use crate::sessrec::metrics::Metric;
+use crate::metrics::precision::Precision;
+use crate::metrics::recall::Recall;
+use crate::metrics::Metric;
 use crate::sessrec::vmisknn::Scored;
 
 #[derive(Debug, Clone)]

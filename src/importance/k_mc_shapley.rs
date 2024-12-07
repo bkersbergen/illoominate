@@ -7,7 +7,7 @@ use crate::importance::candidate_neighbors::CandidateNeighbors;
 use crate::importance::mc_utils::{error_dataset, random_score_dataset};
 use crate::importance::{mc_utils, Dataset, Importance, RetrievalBasedModel};
 
-use crate::sessrec::metrics::MetricFactory;
+use crate::metrics::MetricFactory;
 use crate::sessrec::vmisknn::Scored;
 
 pub struct KMcShapley {

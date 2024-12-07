@@ -1,6 +1,4 @@
-use crate::nbr::tifuknn::types::{Basket, UserId};
-use grouping_by::GroupingBy;
-use std::collections::HashMap;
+use crate::nbr::tifuknn::types::UserId;
 use std::fs::File;
 use std::io;
 use std::io::BufRead;

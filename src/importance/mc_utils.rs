@@ -1,5 +1,5 @@
 use crate::importance::{Dataset, RetrievalBasedModel};
-use crate::sessrec::metrics::{Metric, MetricFactory};
+use crate::metrics::{Metric, MetricFactory};
 use crate::sessrec::types::{SessionId};
 use crate::sessrec::vmisknn::Scored;
 use itertools::Itertools;

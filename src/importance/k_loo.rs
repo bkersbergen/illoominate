@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::importance::{Dataset, Importance, RetrievalBasedModel};
-use crate::sessrec::metrics::MetricFactory;
+use crate::metrics::MetricFactory;
 
 pub struct KLoo {}
 

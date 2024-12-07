@@ -1,6 +1,6 @@
 use std::cmp;
 
-use crate::sessrec::metrics::Metric;
+use crate::metrics::Metric;
 use crate::sessrec::vmisknn::Scored;
 
 #[derive(Debug, Clone)]

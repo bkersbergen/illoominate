@@ -1,15 +1,12 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io::BufWriter;
 use std::marker::{Send, Sync};
 use std::sync::Mutex;
-use std::io::Write;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::prelude::{IntoParallelIterator, ParallelSliceMut};
 
-use crate::sessrec::metrics::{Metric, MetricFactory};
+use crate::metrics::{Metric, MetricFactory};
 use crate::sessrec::types::{SessionId, Time};
 use crate::sessrec::vmisknn::Scored;
 

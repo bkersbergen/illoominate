@@ -1,9 +1,10 @@
-use crate::sessrec::metrics::Metric;
+use crate::metrics::Metric;
 use crate::sessrec::types::ItemId;
 use crate::sessrec::vmisknn::Scored;
 use std::cmp;
 use std::collections::HashSet;
 
+#[derive(Debug, Clone)]
 pub struct Ndcg {
     sum_of_scores: f64,
     qty: usize,

@@ -1,27 +1,28 @@
 use std::cmp;
 use std::collections::HashSet;
 
-use crate::sessrec::metrics::Metric;
+use crate::metrics::Metric;
 use crate::sessrec::vmisknn::Scored;
 
 #[derive(Debug, Clone)]
-pub struct Precision {
+pub struct Recall {
     sum_of_scores: f64,
     qty: usize,
     length: usize,
 }
 
-impl Precision {
-    /// Returns a Precision evaluation metric.
-    /// Precision quantifies the number of positive class predictions that
-    /// actually belong to the positive class
+impl Recall {
+    /// Returns a Recall evaluation metric.
+    /// Recall quantifies the number of positive recommendations made out
+    /// of all interacted items.
     ///
     /// # Arguments
     ///
     /// * `length` - the length aka 'k' that will be used for evaluation.
     ///
+
     pub fn new(length: usize) -> Self {
-        Precision {
+        Recall {
             sum_of_scores: 0_f64,
             qty: 0,
             length,
@@ -29,7 +30,7 @@ impl Precision {
     }
 }
 
-impl Metric for Precision {
+impl Metric for Recall {
     fn add(&mut self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>) {
         self.qty += 1;
 
@@ -45,7 +46,7 @@ impl Metric for Precision {
     }
 
     fn get_name(&self) -> String {
-        format!("Precision@{}", self.length)
+        format!("Recall@{}", self.length)
     }
 
     fn reset(&mut self) {
@@ -54,7 +55,7 @@ impl Metric for Precision {
     }
 
     fn compute(&self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>) -> f64 {
-        if recommendations.is_empty() {
+        if recommendations.is_empty() || next_items.is_empty() {
             return 0.0;
         }
         let top_recos: HashSet<_> = recommendations
@@ -62,23 +63,25 @@ impl Metric for Precision {
             .take(cmp::min(recommendations.len(), self.length))
             .collect();
 
-        let next_items: HashSet<_> = next_items.iter().collect();
+        let unique_next_items: HashSet<_> = next_items.iter().collect();
 
-        let intersection_count = top_recos.intersection(&next_items).count();
+        let intersection_count = top_recos.intersection(&unique_next_items).count();
 
-        intersection_count as f64 / self.length as f64
+        //intersection_count as f64 / next_items.len() as f64
+
+        intersection_count as f64 / unique_next_items.len() as f64
     }
 }
 
 #[cfg(test)]
-mod precision_test {
+mod recall_test {
     use itertools::Itertools;
     use super::*;
 
     #[test]
-    fn should_calculate_precision() {
+    fn should_calculate_recall() {
         let length = 20;
-        let mut mymetric = Precision::new(length);
+        let mut under_test = Recall::new(length);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         ].iter()
@@ -87,14 +90,14 @@ mod precision_test {
         let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4].iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
-        mymetric.add(&recommendations, &actual_next_items);
-        assert_eq!(2.0 / length as f64, mymetric.result());
-        assert_eq!("Precision@20", mymetric.get_name());
+        under_test.add(&recommendations, &actual_next_items);
+        assert!((2.0/3.0 - under_test.result()).abs() < f64::EPSILON);
+        assert_eq!("Recall@20", under_test.get_name());
     }
 
     #[test]
     fn handle_empty_recommendations() {
-        let mymetric = Precision::new(20);
+        let mymetric = Recall::new(20);
         let recommendations: Vec<Scored> = vec![];
         let actual_next_items: Vec<Scored> = vec![1, 2].iter()
             .map(|&id| Scored::new(id, 1.0))
