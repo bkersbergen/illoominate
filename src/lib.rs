@@ -95,7 +95,7 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::ResponsibleMrr,
+        "responsiblemrr" => MetricType::SustainableMrr,
         "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
@@ -240,7 +240,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::ResponsibleMrr,
+        "responsiblemrr" => MetricType::SustainableMrr,
         "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message

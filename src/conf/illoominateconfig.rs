@@ -80,13 +80,13 @@ impl IlloominateConfig {
 }
 
 pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
-    let metric_type = match app_config.metric.name.to_lowercase().as_str() {
+    let metric_type = match app_config.metric.name.trim().to_lowercase().as_str() {
         "f1score" => MetricType::F1score,
         "hitrate" => MetricType::HitRate,
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::ResponsibleMrr,
+        "sustainablemrr" => MetricType::SustainableMrr,
         "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message

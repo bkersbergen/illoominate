@@ -5,10 +5,10 @@ use crate::sessrec::metrics::ndcg::Ndcg;
 use crate::sessrec::metrics::precision::Precision;
 use crate::sessrec::metrics::product_info::ProductInfo;
 use crate::sessrec::metrics::recall::Recall;
-use crate::sessrec::metrics::responsible_mrr::ResponsibleMrr;
+use crate::sessrec::metrics::sustainable_mrr::SustainableMrr;
 use serde::{Deserialize, Serialize};
 // use crate::sessrec::metrics::responsible_mrr::ResponsibleMrr;
-use crate::sessrec::metrics::sustainabilityratio::SustainabilityCoverage;
+use crate::sessrec::metrics::st::St;
 use crate::sessrec::vmisknn::Scored;
 
 pub mod f1metric;
@@ -18,8 +18,8 @@ pub mod ndcg;
 pub mod precision;
 pub mod product_info;
 pub mod recall;
-pub mod responsible_mrr;
-pub mod sustainabilityratio;
+pub mod sustainable_mrr;
+pub mod st;
 
 pub trait Metric {
     fn add(&mut self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>);
@@ -37,7 +37,7 @@ pub enum MetricType {
     MRR,
     Precision,
     Recall,
-    ResponsibleMrr,
+    SustainableMrr,
     SustainabilityCoverage,
     Ndcg,
 }
@@ -83,12 +83,12 @@ impl<'a> MetricFactory<'a> {
             MetricType::MRR => Box::new(Mrr::new(self.config.length)),
             MetricType::Precision => Box::new(Precision::new(self.config.length)),
             MetricType::Recall => Box::new(Recall::new(self.config.length)),
-            MetricType::ResponsibleMrr => Box::new(ResponsibleMrr::new(
+            MetricType::SustainableMrr => Box::new(SustainableMrr::new(
                 &self.product_info,
                 self.config.mrr_alpha,
                 self.config.length,
             )),
-            MetricType::SustainabilityCoverage => Box::new(SustainabilityCoverage::new(
+            MetricType::SustainabilityCoverage => Box::new(St::new(
                 &self.product_info,
                 self.config.length,
             )),

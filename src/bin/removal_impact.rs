@@ -315,7 +315,7 @@ pub fn create_metric_factory<'a>(
 ) -> MetricFactory<'a> {
     let sustainable_products: HashSet<ItemId> = if metric_config
         .evaluation_metrics
-        .contains(&MetricType::ResponsibleMrr)
+        .contains(&MetricType::SustainableMrr)
         || metric_config
         .evaluation_metrics
         .contains(&MetricType::SustainabilityCoverage)
