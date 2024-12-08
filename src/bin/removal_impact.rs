@@ -16,7 +16,7 @@ use illoominate::sessrec::io;
 use illoominate::sessrec::types::{ItemId, SessionDataset};
 use illoominate::sessrec::vmisknn::VMISKNN;
 use rand::seq::IteratorRandom;
-use illoominate::importance::{Dataset, Importance};
+use illoominate::importance::{Importance};
 use illoominate::nbr::removal_impact::{split_train_eval, tifu_evaluate_removal_impact};
 use illoominate::nbr::tifuknn::io::read_baskets_file;
 use illoominate::nbr::tifuknn::TIFUKNN;

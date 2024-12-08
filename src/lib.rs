@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use chrono::Local;
 use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3_polars::PyDataFrame;
@@ -78,43 +77,15 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
     let validation_df: DataFrame = validation.into();
     let sustainable_df: DataFrame = sustainable.into();
 
-    let is_sbr = match model.to_lowercase().as_str().trim() {
+    let is_sbr = match model.to_lowercase().as_str() {
         "vmis" => true,
         "tifu" => false,
         invalid => panic!("Unknown model type: {}", invalid),
     };
 
-    let (metric, at_k): (&str, usize) = {
-        let parts: Vec<&str> = metric.split('@').take(2).collect();
-        (parts[0], parts[1].parse().expect("Failed to parse at_k as a number"))
-    };
-
-    let metric_type = match metric.to_lowercase().as_str().trim() {
-        "f1score" => MetricType::F1score,
-        "hitrate" => MetricType::HitRate,
-        "mrr" => MetricType::MRR,
-        "precision" => MetricType::Precision,
-        "recall" => MetricType::Recall,
-        "sustainablemrr" => MetricType::SustainableMrr,
-        "st" => MetricType::SustainabilityCoverageTerm,
-        "ndcg" => MetricType::Ndcg,
-        invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
-    };
-
-    let metric_config = MetricConfig {
-        importance_metric: metric_type.clone(),
-        evaluation_metrics: vec![metric_type.clone()],
-        length: at_k,
-        mrr_alpha: 0.8,
-    };
+    let metric_config = parse_metric_config(metric);
 
     let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
-
-    // Check if the metric type requires sustainable products, and if the set is empty, throw an error
-    if (matches!(metric_type, MetricType::SustainableMrr) || matches!(metric_type, MetricType::SustainabilityCoverageTerm))
-        && sustainable_products.is_empty() {
-        panic!("Argument `sustainable_df` must contain column `item_id` and must not be empty for this metric type.");
-    }
 
     let product_info = ProductInfo::new(sustainable_products);
     let metric_factory = MetricFactory::new(&metric_config, product_info);
@@ -191,26 +162,7 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
         shap_values
     };
 
-    // Initialize vectors for session_ids and shapley_values
-    let mut ids = Vec::with_capacity(shap_values.len());
-    let mut importance_values = Vec::with_capacity(shap_values.len());
-
-    // Populate vectors in a consistent order
-    for (key_id, shapley_value) in shap_values.iter() {
-        ids.push(*key_id as i64);
-        importance_values.push(*shapley_value);
-    }
-
-    // Create Polars Series from the vectors
-    let id_column_name = if is_sbr { "session_id" } else { "user_id" };
-    let session_ids_series = polars::prelude::Column::Series(Series::new(id_column_name.into(), &ids));
-    let score_series = polars::prelude::Column::Series(Series::new("score".into(), &importance_values));
-
-    // Create a DataFrame from the Series
-    let df = DataFrame::new(vec![session_ids_series, score_series])
-        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
-
-    Ok(PyDataFrame(df))
+    convert_to_py_result(shap_values, if is_sbr { "session_id" } else { "user_id" })
 }
 
 
@@ -228,37 +180,10 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
         invalid => panic!("Unknown model type: {}", invalid),
     };
 
-    let (metric, at_k): (&str, usize) = {
-        let parts: Vec<&str> = metric.split('@').take(2).collect();
-        (parts[0], parts[1].parse().expect("Failed to parse at_k as a number"))
-    };
-
-    let metric_type = match metric.trim().to_lowercase().as_str() {
-        "f1score" => MetricType::F1score,
-        "hitrate" => MetricType::HitRate,
-        "mrr" => MetricType::MRR,
-        "precision" => MetricType::Precision,
-        "recall" => MetricType::Recall,
-        "sustainablemrr" => MetricType::SustainableMrr,
-        "st" => MetricType::SustainabilityCoverageTerm,
-        "ndcg" => MetricType::Ndcg,
-        invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
-    };
-
-    let metric_config = MetricConfig {
-        importance_metric: metric_type.clone(),
-        evaluation_metrics: vec![metric_type.clone()],
-        length: at_k,
-        mrr_alpha: 0.8,
-    };
+    let metric_config = parse_metric_config(metric);
 
     let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
 
-    // Check if the metric type requires sustainable products, and if the set is empty, throw an error
-    if (matches!(metric_type, MetricType::SustainableMrr) || matches!(metric_type, MetricType::SustainabilityCoverageTerm))
-        && sustainable_products.is_empty() {
-        panic!("Argument `sustainable_df` must contain a list of `item_id` values and must not be empty for this metric type.");
-    }
     let product_info = ProductInfo::new(sustainable_products);
     let metric_factory = MetricFactory::new(&metric_config, product_info);
 
@@ -327,27 +252,60 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
         loo_importances
     };
 
-    // Initialize vectors for session_ids and shapley_values
-    let mut session_ids = Vec::with_capacity(loo_values.len());
-    let mut shapley_values = Vec::with_capacity(loo_values.len());
+    convert_to_py_result(loo_values, if is_sbr { "session_id" } else { "user_id" })
+}
 
-    // Populate vectors in a consistent order
-    for (session_id, loo_value) in loo_values.iter() {
-        session_ids.push(*session_id as i64);
-        shapley_values.push(*loo_value);
+// Reusable function: Convert importance values to PyDataFrame
+fn convert_to_py_result(
+    importance: HashMap<u32, f64>,
+    id_column_name: &str,
+) -> PyResult<PyDataFrame> {
+    let mut ids = Vec::with_capacity(importance.len());
+    let mut scores = Vec::with_capacity(importance.len());
+
+    for (id, score) in importance {
+        ids.push(id as i64);
+        scores.push(score);
     }
 
-    // Create Polars Series from the vectors
-    let id_column_name = if is_sbr { "session_id" } else { "user_id" };
-    let session_ids_series = polars::prelude::Column::Series(Series::new(id_column_name.into(), &session_ids));
-    let score_series = polars::prelude::Column::Series(Series::new("score".into(), &shapley_values));
-
-    // Create a DataFrame from the Series
-    let df = DataFrame::new(vec![session_ids_series, score_series])
+    let df = DataFrame::new(vec![
+        polars::prelude::Column::Series(Series::new(id_column_name.into(), &ids)),
+        polars::prelude::Column::Series(Series::new("score".into(), &scores)),
+    ])
         .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
 
     Ok(PyDataFrame(df))
 }
+
+// Reusable function: Parse metric configuration
+fn parse_metric_config(metric: &str) -> MetricConfig {
+    let (metric_name, at_k) = {
+        let parts: Vec<&str> = metric.split('@').collect();
+        (parts[0], parts[1].parse().expect("Failed to parse @k"))
+    };
+
+    let metric_type = match metric_name.to_lowercase().trim() {
+        "f1score" => MetricType::F1score,
+        "hitrate" => MetricType::HitRate,
+        "mrr" => MetricType::MRR,
+        "precision" => MetricType::Precision,
+        "recall" => MetricType::Recall,
+        "sustainablemrr" => MetricType::SustainableMrr,
+        "st" => MetricType::SustainabilityCoverageTerm,
+        "ndcg" => MetricType::Ndcg,
+        _ => panic!("Invalid metric type: {}", metric_name),
+    };
+
+    let config = MetricConfig {
+        importance_metric: metric_type.clone(),
+        evaluation_metrics: vec![metric_type.clone()],
+        length: at_k,
+        mrr_alpha: 0.8,
+    };
+
+    config
+}
+
 
 
 /// A Python module implemented in Rust.

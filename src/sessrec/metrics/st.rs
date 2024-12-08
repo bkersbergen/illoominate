@@ -15,6 +15,9 @@ pub struct St<'a> {
 
 impl<'a> St<'a> {
     pub fn new(product_info: &'a ProductInfo, length: usize) -> Self {
+        if product_info.sustainable_products.is_empty() {
+            panic!("Argument `product_info` must contain a list of item_id values and must not be empty for this metric type.");
+        }
         St {
             sum_of_scores: 0_f64,
             qty: 0,

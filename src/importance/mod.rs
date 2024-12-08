@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::hash::{Hash, Hasher};
-use std::io::BufWriter;
 use std::marker::{Send, Sync};
 use std::sync::Mutex;
 use std::io::Write;
