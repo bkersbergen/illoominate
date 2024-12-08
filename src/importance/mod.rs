@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::marker::{Send, Sync};
 use std::sync::Mutex;
-use std::io::Write;
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::prelude::{IntoParallelIterator, ParallelSliceMut};

@@ -7,7 +7,6 @@ use std::io::{self, BufRead};
 use polars_core::datatypes::AnyValue;
 use pyo3::PyErr;
 use polars::prelude::*;
-use pyo3_polars::PyDataFrame;
 use crate::sessrec::types::{Interaction, ItemId, SessionDataset, SessionId, Time};
 
 impl SessionDataset {

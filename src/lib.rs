@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3_polars::PyDataFrame;
-use crate::importance::{Dataset, Importance};
+use crate::importance::{Importance};
 use crate::importance::k_loo::KLoo;
 use crate::importance::k_mc_shapley::KMcShapley;
 use crate::nbr::tifuknn::io::polars_to_purchases;
@@ -133,7 +133,6 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
                 panic!("Failed to convert DataFrame: {}", e);
-                NextBasketDataset::from(&Vec::new())
             }
         };
         let basket_valid: NextBasketDataset = match polars_to_purchases(validation_df) {
@@ -143,7 +142,6 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
                 panic!("Failed to convert DataFrame: {}", e);
-                NextBasketDataset::from(&Vec::new())
             }
         };
 
