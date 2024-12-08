@@ -85,7 +85,7 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
     };
 
     let (metric, at_k): (&str, usize) = {
-        let parts: Vec<&str> = metric.trim().split('@').take(2).collect();
+        let parts: Vec<&str> = metric.split('@').take(2).collect();
         (parts[0], parts[1].parse().expect("Failed to parse at_k as a number"))
     };
 
@@ -95,8 +95,8 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::SustainableMrr,
-        "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
+        "sustainablemrr" => MetricType::SustainableMrr,
+        "st" => MetricType::SustainabilityCoverageTerm,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
     };
@@ -111,9 +111,9 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
     let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
 
     // Check if the metric type requires sustainable products, and if the set is empty, throw an error
-    if (matches!(metric_type, MetricType::ResponsibleMrr) || matches!(metric_type, MetricType::SustainabilityCoverage))
+    if (matches!(metric_type, MetricType::SustainableMrr) || matches!(metric_type, MetricType::SustainabilityCoverageTerm))
         && sustainable_products.is_empty() {
-        panic!("Argument `sustainable_df` must contain a list of `item_id` values and must not be empty for this metric type.");
+        panic!("Argument `sustainable_df` must contain column `item_id` and must not be empty for this metric type.");
     }
 
     let product_info = ProductInfo::new(sustainable_products);
@@ -152,7 +152,6 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
 
         let model:VMISKNN = VMISKNN::fit_dataset(&session_train, m, k, 1.0);
 
-        // let loo_importances = k_loo_algorithm.compute_importance(&model, &metric_factory, session_train, session_valid);
         let shap_values = kmc_shapley_algorithm.compute_importance(&model, &metric_factory, &session_train, &session_valid);
         shap_values
     } else {
@@ -234,14 +233,14 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
         (parts[0], parts[1].parse().expect("Failed to parse at_k as a number"))
     };
 
-    let metric_type = match metric.to_lowercase().as_str() {
+    let metric_type = match metric.trim().to_lowercase().as_str() {
         "f1score" => MetricType::F1score,
         "hitrate" => MetricType::HitRate,
         "mrr" => MetricType::MRR,
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
-        "responsiblemrr" => MetricType::SustainableMrr,
-        "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
+        "sustainablemrr" => MetricType::SustainableMrr,
+        "st" => MetricType::SustainabilityCoverageTerm,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
     };
@@ -256,7 +255,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
     let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
 
     // Check if the metric type requires sustainable products, and if the set is empty, throw an error
-    if (matches!(metric_type, MetricType::ResponsibleMrr) || matches!(metric_type, MetricType::SustainabilityCoverage))
+    if (matches!(metric_type, MetricType::SustainableMrr) || matches!(metric_type, MetricType::SustainabilityCoverageTerm))
         && sustainable_products.is_empty() {
         panic!("Argument `sustainable_df` must contain a list of `item_id` values and must not be empty for this metric type.");
     }

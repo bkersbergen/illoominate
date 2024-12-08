@@ -40,7 +40,7 @@ impl<'a> Metric for St<'a> {
     }
 
     fn get_name(&self) -> String {
-        format!("SustainabilityCoverage@{}", self.length)
+        format!("St@{}", self.length)
     }
 
     fn reset(&mut self) {

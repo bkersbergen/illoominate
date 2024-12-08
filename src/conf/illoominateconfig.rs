@@ -87,7 +87,7 @@ pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
         "sustainablemrr" => MetricType::SustainableMrr,
-        "sustainabilitycoverage" => MetricType::SustainabilityCoverage,
+        "sustainabilitycoverage" => MetricType::SustainabilityCoverageTerm,
         "ndcg" => MetricType::Ndcg,
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
     };

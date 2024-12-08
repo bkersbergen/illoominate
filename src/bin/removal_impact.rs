@@ -318,7 +318,7 @@ pub fn create_metric_factory<'a>(
         .contains(&MetricType::SustainableMrr)
         || metric_config
         .evaluation_metrics
-        .contains(&MetricType::SustainabilityCoverage)
+        .contains(&MetricType::SustainabilityCoverageTerm)
     {
         read_sustainable_products_info(&format!("{}/__sustainable_mapped_items.csv.csv", data_path))
     } else {

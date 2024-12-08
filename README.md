@@ -166,11 +166,9 @@ plt.show()
 
 ### Example 4: Increasing the Sustainability of Recommendations via Data Pruning
 
-To measure the sustainability of recommendations, Illoominate supports specialized metrics such as responsiblemrr and sustainabilitycoverage.
-
 Illoominate supports metrics to include a sustainability term that expresses the number of sustainable products in a given recommendation. SustainableMRR@t as `0.8·MRR@t + 0.2· st` . This utility combines the MRR@t with the “sustainability coverage term” `st` , where `s` denotes the number of sustainable items among the `t` recommended items.
 
-The function call remains the same, you only change the metric to `responsiblemrr` or `sustainabilitycoverage` and provide a list of items that are considered sustainable.
+The function call remains the same, you only change the metric to `SustainableMRR` or `st` (sustainability coverage term) and provide a list of items that are considered sustainable.
 
 ```python
 import illoominate

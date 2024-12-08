@@ -38,7 +38,7 @@ pub enum MetricType {
     Precision,
     Recall,
     SustainableMrr,
-    SustainabilityCoverage,
+    SustainabilityCoverageTerm,
     Ndcg,
 }
 
@@ -88,7 +88,7 @@ impl<'a> MetricFactory<'a> {
                 self.config.mrr_alpha,
                 self.config.length,
             )),
-            MetricType::SustainabilityCoverage => Box::new(St::new(
+            MetricType::SustainabilityCoverageTerm => Box::new(St::new(
                 &self.product_info,
                 self.config.length,
             )),
