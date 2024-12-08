@@ -103,7 +103,7 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                SessionDataset::new(Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
 
@@ -113,7 +113,7 @@ fn data_shapley_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, 
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                SessionDataset::new(Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
 
@@ -194,7 +194,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                SessionDataset::new(Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
 
@@ -204,7 +204,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                SessionDataset::new(Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
 
