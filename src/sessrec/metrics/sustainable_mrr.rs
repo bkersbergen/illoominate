@@ -8,16 +8,16 @@ use crate::sessrec::vmisknn::Scored;
 pub struct SustainableMrr<'a> {
     mrr: Mrr,
     sustainability_coverage_term: St<'a>,
-    mrr_alpha: f64,
+    alpha: f64,
     length: usize,
 }
 
 impl<'a> SustainableMrr<'a> {
-    pub fn new(product_info: &'a ProductInfo, mrr_alpha: f64, length: usize) -> Self {
+    pub fn new(product_info: &'a ProductInfo, alpha: f64, length: usize) -> Self {
         SustainableMrr {
             mrr: Mrr::new(length),
             sustainability_coverage_term: St::new(product_info, length),
-            mrr_alpha,
+            alpha: alpha,
             length,
         }
     }
@@ -31,13 +31,13 @@ impl Metric for SustainableMrr<'_> {
     }
 
     fn result(&self) -> f64 {
-        let mrr_weighted = self.mrr.result() * self.mrr_alpha;
-        let sustainable_coverage = self.sustainability_coverage_term.result() * (1.0 - self.mrr_alpha);
+        let mrr_weighted = self.mrr.result() * self.alpha;
+        let sustainable_coverage = self.sustainability_coverage_term.result() * (1.0 - self.alpha);
         mrr_weighted + sustainable_coverage
     }
 
     fn get_name(&self) -> String {
-        format!("ResponsibleMrr@{}", self.length)
+        format!("SustainableMrr@{}", self.length)
     }
 
     fn reset(&mut self) {
@@ -46,11 +46,11 @@ impl Metric for SustainableMrr<'_> {
     }
 
     fn compute(&self, recommendations: &Vec<Scored>, next_items: &Vec<Scored>) -> f64 {
-        let mrr_weighted_score = self.mrr.compute(recommendations, next_items) * self.mrr_alpha;
+        let mrr_weighted_score = self.mrr.compute(recommendations, next_items) * self.alpha;
         let sustainability_coverage_weighted_score = self
             .sustainability_coverage_term
             .compute(recommendations, next_items)
-            * (1.0 - self.mrr_alpha);
+            * (1.0 - self.alpha);
         mrr_weighted_score + sustainability_coverage_weighted_score
     }
 }

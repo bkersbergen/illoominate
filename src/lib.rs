@@ -188,27 +188,25 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
     let k_loo_algorithm = KLoo::new();
 
     let loo_values:HashMap<u32, f64> = if is_sbr {
-        let train = match polars_to_interactions(data_df) {
+        let session_train = match polars_to_interactions(data_df) {
             Ok(interactions) => {
-                interactions
+                SessionDataset::new(interactions)
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                Vec::new()
+                SessionDataset::new(Vec::new())
             }
         };
 
-        let validation = match polars_to_interactions(validation_df) {
+        let session_valid = match polars_to_interactions(validation_df) {
             Ok(interactions) => {
-                interactions
+                SessionDataset::new(interactions)
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                Vec::new()
+                SessionDataset::new(Vec::new())
             }
         };
-        let session_train = SessionDataset::new(train);
-        let session_valid = SessionDataset::new(validation);
 
         let m = params.get("m").map(|&m| m as usize).expect("param `m` is mandatory for this algorithm. e.g. 500");
         let k = params.get("k").map(|&k| k as usize).expect("param `k` is mandatory for this algorithm. e.g. 250");
@@ -224,7 +222,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                NextBasketDataset::from(&Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
         let basket_valid = match polars_to_purchases(validation_df) {
@@ -233,7 +231,7 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
             }
             Err(e) => {
                 log::error!("Failed to convert DataFrame: {}", e);
-                NextBasketDataset::from(&Vec::new())
+                panic!("Failed to convert DataFrame: {}", e);
             }
         };
 
@@ -289,16 +287,17 @@ fn parse_metric_config(metric: &str) -> MetricConfig {
         "precision" => MetricType::Precision,
         "recall" => MetricType::Recall,
         "sustainablemrr" => MetricType::SustainableMrr,
+        "sustainablendcg" => MetricType::SustainableNdcg,
         "st" => MetricType::SustainabilityCoverageTerm,
         "ndcg" => MetricType::Ndcg,
-        _ => panic!("Invalid metric type: {}", metric_name),
+        _ => panic!("Invalid metric type: '{}'", metric_name),
     };
 
     let config = MetricConfig {
         importance_metric: metric_type.clone(),
         evaluation_metrics: vec![metric_type.clone()],
         length: at_k,
-        mrr_alpha: 0.8,
+        alpha: 0.8,
     };
 
     config

@@ -97,7 +97,7 @@ pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
         importance_metric: metric_type.clone(),
         evaluation_metrics: vec![metric_type.clone()],
         length: app_config.metric.length,
-        mrr_alpha: 0.8,
+        alpha: 0.8,
     }
 }
 
