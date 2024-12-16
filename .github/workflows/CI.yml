@@ -137,15 +137,8 @@ jobs:
       - build-windows
     if: contains(github.event.head_commit.message, '-rc')
     steps:
-      - name: List Available Artifacts
-        run: ls -al
-
       - name: Merge Build Artifacts
         uses: actions/upload-artifact/merge@v4
         with:
           name: dist
-          pattern: |
-            dist-linux-x86_64
-            dist-macos-x86_64
-            dist-macos-arm64
-            dist-windows-x86_64
+          pattern: "dist-linux-x86_64 dist-macos-x86_64 dist-macos-arm64 dist-windows-x86_64"
