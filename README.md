@@ -1,5 +1,8 @@
 # Illoominate - Data Importance for Recommender Systems
 
+![PyPI Downloads](https://img.shields.io/pypi/dm/illoominate)
+![PyPI Total Downloads](https://static.pepy.tech/badge/illoominate)
+
 Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
 
