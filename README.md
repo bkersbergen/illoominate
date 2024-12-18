@@ -2,7 +2,7 @@
 
 [//]: # (![PyPI Downloads]&#40;https://img.shields.io/pypi/dm/illoominate&#41;)
 
-Illoominate is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
+<span style="font-variant: small-caps;">Illoominate</span> is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
 
 ### Key Features
@@ -14,13 +14,13 @@ Illoominate is a scalable library designed to compute data importance scores for
 
 
 # Illoominate Framework
-This repository contains the code for the illoominate framework, which accompanies the scientific manuscript which is under review.
+This repository contains the code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies the scientific manuscript which is under review.
 
 ## Overview
 
-Illoominate is implemented in Rust with a Python frontend. It is optimized to scale with datasets containing millions of interactions, commonly found in real-world recommender systems. The library includes KNN-based models VMIS-kNN and TIFU-kNN, used for session-based recommendations and next-basket recommendations.
+<span style="font-variant: small-caps;">Illoominate</span> is implemented in Rust with a Python frontend. It is optimized to scale with datasets containing millions of interactions, commonly found in real-world recommender systems. The library includes KNN-based models VMIS-kNN and TIFU-kNN, used for session-based recommendations and next-basket recommendations.
 
-By leveraging the Data Shapley value, Illoominate helps data scientists and engineers:
+By leveraging the Data Shapley value, <span style="font-variant: small-caps;">Illoominate</span> helps data scientists and engineers:
 - Debug potentially corrupted data
 - Improve recommendation quality by identifying impactful data points
 - Prune training data for sustainable item recommendations
@@ -30,7 +30,7 @@ By leveraging the Data Shapley value, Illoominate helps data scientists and engi
 Ensure **Python >= 3.10** is installed. 
 
 ### Installing Illoominate
-Illoominate can be installed via pip from [PyPI](https://pypi.org/project/illoominate/). 
+<span style="font-variant: small-caps;">Illoominate</span> can be installed via pip from [PyPI](https://pypi.org/project/illoominate/). 
 
 `
 pip install illoominate
@@ -39,7 +39,7 @@ pip install illoominate
 We provide precompiled binaries for Linux, Windows and macOS.
 
 ### Note
-It is recommended to install and run Illoominate from a virtual environment.
+It is recommended to install and run <span style="font-variant: small-caps;">Illoominate</span> from a virtual environment.
 If you are using a virtual environment, activate it before running the installation command.
 
 ```
@@ -52,7 +52,7 @@ venv\Scripts\activate     # Activate the virtualenv (Windows)
 # Example Use Cases
 ### Example 1: Computing Data Shapley Values for Session-Based Recommendations
 
-Illoominate computes Data Shapley values to assess the contribution of each data point to the recommendation performance. Below is an example using the public _Now Playing 1M_ dataset.
+<span style="font-variant: small-caps;">Illoominate</span> computes Data Shapley values to assess the contribution of each data point to the recommendation performance. Below is an example using the public _Now Playing 1M_ dataset.
 
 ```python
 import illoominate
@@ -170,7 +170,7 @@ plt.show()
 
 ### Example 4: Increasing the Sustainability of Recommendations via Data Pruning
 
-Illoominate supports metrics to include a sustainability term that expresses the number of sustainable products in a given recommendation. SustainableMRR@t as `0.8·MRR@t + 0.2· st` . This utility combines the MRR@t with the “sustainability coverage term” `st` , where `s` denotes the number of sustainable items among the `t` recommended items.
+<span style="font-variant: small-caps;">Illoominate</span> supports metrics to include a sustainability term that expresses the number of sustainable products in a given recommendation. SustainableMRR@t as `0.8·MRR@t + 0.2· st` . This utility combines the MRR@t with the “sustainability coverage term” `st` , where `s` denotes the number of sustainable items among the `t` recommended items.
 
 The function call remains the same, you only change the metric to `SustainableMRR`, `SustainableNDCG` or `st` (sustainability coverage term) and provide a list of items that are considered sustainable.
 
@@ -260,7 +260,7 @@ KMC-Shapley (K-nearest Monte Carlo Shapley) enhances the efficiency of Data Shap
  
 ### Development Installation
 
-To get started with developing **Illoominate** or conducting the experiments from the paper, follow these steps:
+To get started with developing **<span style="font-variant: small-caps;">Illoominate</span>** or conducting the experiments from the paper, follow these steps:
 
 Requirements:
 - Rust >= 1.82
