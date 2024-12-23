@@ -4,6 +4,7 @@
 
 <span style="font-variant: small-caps;">Illoominate</span> is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
 
+This repository contains the code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies the scientific manuscript which is under review.
 
 ### Key Features
 
@@ -11,10 +12,6 @@
 - Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
 - Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
 - Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
-
-
-# Illoominate Framework
-This repository contains the code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies the scientific manuscript which is under review.
 
 ## Overview
 
@@ -25,18 +22,16 @@ By leveraging the Data Shapley value, <span style="font-variant: small-caps;">Il
 - Improve recommendation quality by identifying impactful data points
 - Prune training data for sustainable item recommendations
 
+## Getting Started
+### Quick Installation
 
-## Installation
-Ensure **Python >= 3.10** is installed. 
+<span style="font-variant: small-caps;">Illoominate</span> is available via [PyPI](https://pypi.org/project/illoominate/). 
 
-### Installing Illoominate
-<span style="font-variant: small-caps;">Illoominate</span> can be installed via pip from [PyPI](https://pypi.org/project/illoominate/). 
-
-`
+```bash
 pip install illoominate
-`
+```
 
-We provide precompiled binaries for Linux, Windows and macOS.
+Ensure **Python >= 3.10** is installed. We provide precompiled binaries for Linux, Windows and macOS.
 
 ### Note
 It is recommended to install and run <span style="font-variant: small-caps;">Illoominate</span> from a virtual environment.
