@@ -1,0 +1,10 @@
+[model]
+name = "vmis"
+
+[hpo]
+k = 500
+m = 500
+
+[metric]
+name="MRR"
+length=20

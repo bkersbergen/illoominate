@@ -32,7 +32,8 @@ pub fn vmis_evaluate_removal_impact<D: Dataset + Sync>(
     m: usize,
     k: usize,
     seed: usize,
-    qty_impact_resolution: usize,
+    evaluation_interval: usize,
+    max_qty_evaluations: usize,
     output_files_evaluation_metric_results: &mut Vec<File>,
 ) {
     let mut train = train.clone();
@@ -62,18 +63,15 @@ pub fn vmis_evaluate_removal_impact<D: Dataset + Sync>(
     }
 
     let mut num_sessions_removed = 0;
+    let mut num_evaluations = 0;
 
-    let impact_interval = max(
-        1,
-        (keys_to_remove.len() as f64 / qty_impact_resolution as f64) as usize,
-    );
     for key in keys_to_remove {
         // Remove SessionId from the Training data
-        if train.sessions.remove(key).is_some() {
+        if train.sessions.remove(key).is_some() && (train.sessions.len() > 0) {
             num_sessions_removed += 1;
-            let compute_impact =
-                (train.sessions.len() == 1) || (num_sessions_removed % impact_interval == 0);
+            let compute_impact = (num_sessions_removed % evaluation_interval == 0) && (num_sessions_removed < max_qty_evaluations);
             if compute_impact {
+                num_evaluations += 1;
                 // evaluate on validation data and write output
                 let retrained_model = VMISKNN::fit_dataset(&train, m, k, 1.0);
 

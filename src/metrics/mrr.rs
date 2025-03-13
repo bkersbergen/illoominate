@@ -47,9 +47,9 @@ impl Metric for Mrr {
         let top_recos = &recommendations[0..num_recos];
 
         let next_item = next_items[0];
-        let index = top_recos.iter().position(|&item_id| item_id == next_item);
+        let index = top_recos.iter().position(|item| item.id == next_item.id);
         if let Some(rank) = index {
-            1_f64 / (rank as f64 + 1_f64)
+            1.0 / (rank as f64 + 1.0)
         } else {
             0.0
         }

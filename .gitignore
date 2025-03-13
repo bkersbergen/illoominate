@@ -2,6 +2,7 @@ datasets/private/*
 configfile.toml
 .ipynb_checkpoints/
 
+data/*private/
 secrets.ini
 target/
 venv/

@@ -229,15 +229,15 @@ print(train_df_pruned)
 - `tifu`: Next-basket recommendation [TIFU-kNN](https://dl.acm.org/doi/10.1145/3397271.3401066).
 
 `metric` (str): Evaluation metric to calculate importance. Supported values:
-- `mrr`
-- `ndcg`
-- `st`
-- `hitrate`
-- `f1`
-- `precision`
-- `recall`
-- `sustainablemrr`
-- `sustainablendcg`
+- `mrr@20` Mean Reciprocal Rank
+- `ndcg@20` Normalized Discounted Cumulative Gain
+- `st@20` Sustainability coverage
+- `hitrate@20` HitRate
+- `f1@20` F1
+- `precision@20` Precision
+- `recall@20` Recall
+- `sustainablemrr@20` Combines the MRR with a Sustainability coverage term
+- `sustainablendcg@20` Combines the NDCG with a Sustainability coverage term
 
 `params` (dict): Model specific parameters
 

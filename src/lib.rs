@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use polars::prelude::*;
 use pyo3::prelude::*;
 use pyo3_polars::PyDataFrame;
-use crate::importance::{Importance};
+use crate::importance::{evaluate_dataset, Dataset, Importance};
 use crate::importance::k_loo::KLoo;
 use crate::importance::k_mc_shapley::KMcShapley;
 use crate::nbr::tifuknn::io::polars_to_purchases;
@@ -252,6 +252,114 @@ fn data_loo_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metr
     convert_to_py_result(loo_values, if is_sbr { "session_id" } else { "user_id" })
 }
 
+
+#[pyfunction]
+fn train_and_evaluate_polars(data: PyDataFrame, validation: PyDataFrame, model: &str, metric: &str,
+                   params: HashMap<String, f64>, sustainable: PyDataFrame) -> PyResult<PyDataFrame> {
+
+    let data_df: DataFrame = data.into();
+    let validation_df: DataFrame = validation.into();
+    let sustainable_df: DataFrame = sustainable.into();
+
+    let is_sbr = match model.to_lowercase().as_str() {
+        "vmis" => true,
+        "tifu" => false,
+        invalid => panic!("Unknown model type: {}", invalid),
+    };
+
+    let metric_config = parse_metric_config(metric);
+
+    let sustainable_products: HashSet<ItemId> = get_sustainable_items(sustainable_df);
+
+    let product_info = ProductInfo::new(sustainable_products);
+    let metric_factory = MetricFactory::new(&metric_config, product_info);
+
+
+    let metrics :Vec<(String, f64)> = if is_sbr {
+        let session_train = match polars_to_interactions(data_df) {
+            Ok(interactions) => {
+                SessionDataset::new(interactions)
+            }
+            Err(e) => {
+                log::error!("Failed to convert DataFrame: {}", e);
+                panic!("Failed to convert DataFrame: {}", e);
+            }
+        };
+
+        let session_valid = match polars_to_interactions(validation_df) {
+            Ok(interactions) => {
+                SessionDataset::new(interactions)
+            }
+            Err(e) => {
+                log::error!("Failed to convert DataFrame: {}", e);
+                panic!("Failed to convert DataFrame: {}", e);
+            }
+        };
+
+        let m = params.get("m").map(|&m| m as usize).expect("param `m` is mandatory for this algorithm. e.g. 500");
+        let k = params.get("k").map(|&k| k as usize).expect("param `k` is mandatory for this algorithm. e.g. 250");
+
+        let model:VMISKNN = VMISKNN::fit_dataset(&session_train, m, k, 1.0);
+
+        let validation_evaluation_metrics: Vec<(String, f64)> =
+            evaluate_dataset(&model, &metric_factory, &session_valid);
+        validation_evaluation_metrics
+
+
+    } else {
+        let basket_train = match polars_to_purchases(data_df) {
+            Ok(interactions) => {
+                NextBasketDataset::from(&interactions)
+            }
+            Err(e) => {
+                log::error!("Failed to convert DataFrame: {}", e);
+                panic!("Failed to convert DataFrame: {}", e);
+            }
+        };
+        let basket_valid = match polars_to_purchases(validation_df) {
+            Ok(interactions) => {
+                NextBasketDataset::from(&interactions)
+            }
+            Err(e) => {
+                log::error!("Failed to convert DataFrame: {}", e);
+                panic!("Failed to convert DataFrame: {}", e);
+            }
+        };
+
+        let tifu_hyperparameters = HyperParams {
+            m: params.get("m").map(|&m| m as isize).expect("param `m` is mandatory for this algorithm. e.g. 500"),
+            k: params.get("k").map(|&k| k as usize).expect("param `k` is mandatory for this algorithm. e.g. 500"),
+            r_b: *params.get("r_b").expect("param `r_b` is mandatory for this algorithm. Commonly {0...1}"),
+            r_g: *params.get("r_g").expect("param `r_g` is mandatory for this algorithm. Commonly {0...1}"),
+            alpha: *params.get("alpha").expect("param `alpha` is mandatory for this algorithm. Commonly {0...1}"),
+        };
+
+        let model: TIFUKNN = TIFUKNN::new(&basket_train, &tifu_hyperparameters);
+        let validation_evaluation_metrics: Vec<(String, f64)> =
+            evaluate_dataset(&model, &metric_factory, &basket_valid);
+        validation_evaluation_metrics
+    };
+    metrics_to_pydataframe(&metrics)
+}
+
+fn metrics_to_pydataframe(metrics: &Vec<(String, f64)>) -> PyResult<PyDataFrame> {
+    let mut metric_name = Vec::with_capacity(metrics.len());
+    let mut metric_score = Vec::with_capacity(metrics.len());
+
+    for (name, score) in metrics.clone() {
+        metric_name.push(name);
+        metric_score.push(score);
+    }
+
+    let df = DataFrame::new(vec![
+        polars::prelude::Column::Series(Series::new("metric".into(), &metric_name)),
+        polars::prelude::Column::Series(Series::new("score".into(), &metric_score)),
+    ])
+        .map_err(|e| PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(e.to_string()))?;
+
+    Ok(PyDataFrame(df))
+}
+
 // Reusable function: Convert importance values to PyDataFrame
 fn convert_to_py_result(
     importance: HashMap<u32, f64>,
@@ -313,5 +421,6 @@ fn illoominate(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(debug_sbr, m)?)?;
     m.add_function(wrap_pyfunction!(data_shapley_polars, m)?)?;
     m.add_function(wrap_pyfunction!(data_loo_polars, m)?)?;
+    m.add_function(wrap_pyfunction!(train_and_evaluate_polars, m)?)?;
     Ok(())
 }

@@ -79,8 +79,8 @@ impl VMISKNN {
             let session_weight = linear_score(first_match_pos);
 
             for item_id in training_item_ids.iter() {
-                // let _item_idf = self.index.item_to_idf_score[item_id];
-                let item_idf = 0.0;
+                let item_idf = self.index.item_to_idf_score[item_id];
+                // let item_idf = 0.0;
                 if item_idf > 0.0 {
                     *item_scores.entry(*item_id).or_insert(0.0) +=
                         session_weight * item_idf * scored_session.score;
@@ -462,40 +462,37 @@ fn create_item_idf(sessions: &SessionDataset) -> HashMap<u64, f64> {
     result
 }
 
-fn create_most_recent_sessions_per_item(
+pub fn create_most_recent_sessions_per_item(
     sessions: &SessionDataset,
     m: usize,
 ) -> HashMap<ItemId, Vec<SessionId>> {
-    // HashMap to store the XXXX most recent TrainingSessionIds for each ItemId
-    let mut result: HashMap<ItemId, Vec<(Reverse<Time>, SessionId)>> = HashMap::new();
+    // Intermediate mapping: for each item, collect (time, session_id) pairs.
+    let mut item_sessions: HashMap<ItemId, Vec<(Time, SessionId)>> = HashMap::new();
 
+    // Iterate over each session in the dataset.
     for (session_id, (item_ids, time)) in sessions.sessions.iter() {
-        for item_id in item_ids.clone().iter().unique() {
-            // Retrieve or create an entry for the item_id
-            let entry = result.entry(*item_id).or_default();
-
-            // Insert the session_id into the binary heap (min heap)
-            entry.push((Reverse(*time), *session_id));
-            entry.sort_by_key(|&(Reverse(key), _)| key);
-
-            // Truncate to keep only the `m` most recent session_ids
-            if entry.len() > m {
-                entry.truncate(m);
-            }
+        // Use unique() to avoid counting duplicates within the same session.
+        for &item_id in item_ids.iter().unique() {
+            // Insert the (time, session_id) tuple for the given item.
+            item_sessions
+                .entry(item_id)
+                .or_default()
+                .push((*time, *session_id));
         }
     }
-    // Extract just the session ids from each entry
-    
+
+    // Build the final result.
+    // For each item, sort by time descending (most recent first) and keep only m sessions.
+    let mut result: HashMap<ItemId, Vec<SessionId>> = HashMap::new();
+    for (item_id, mut sessions_vec) in item_sessions {
+        sessions_vec.sort_by(|a, b| b.0.cmp(&a.0)); // descending order by time
+        let recent_sessions = sessions_vec
+            .into_iter()
+            .take(m)
+            .map(|(_, session_id)| session_id)
+            .collect();
+        result.insert(item_id, recent_sessions);
+    }
+
     result
-        .into_iter()
-        .map(|(item_id, sessions)| {
-            (
-                item_id,
-                sessions
-                    .into_iter()
-                    .map(|(_, session_id)| session_id)
-                    .collect(),
-            )
-        })
-        .collect()
 }
