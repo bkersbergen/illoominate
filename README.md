@@ -45,7 +45,37 @@ venv\Scripts\activate     # Activate the virtualenv (Windows)
 
 
 # Example Use Cases
-### Example 1: Computing Data Shapley Values for Session-Based Recommendations
+
+### Example 1: Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN
+
+```python
+# Load training and validation datasets
+train_df = pd.read_csv('data/tafeng/processed/train.csv', sep='\t')
+validation_df = pd.read_csv('data/tafeng/processed/valid.csv', sep='\t')
+
+#  Data Leave-One-Out values
+loo_values = illoominate.data_loo_values(
+    train_df=train_df,
+    validation_df=validation_df,
+    model='tifu',
+    metric='ndcg@10',
+    params={'m':7, 'k':100, 'r_b': 0.9, 'r_g': 0.7, 'alpha': 0.7, 'seed': 42},
+)
+
+# Visualize the distribution of Data Leave-One-Out Values
+plt.hist(shapley_values['score'], density=False, bins=100)
+plt.title('Distribution of Data LOO Values')
+plt.yscale('log')
+plt.ylabel('Frequency')
+plt.xlabel('Data Leave-One-Out Values')
+plt.savefig('images/loo.png', dpi=300)
+plt.show()
+```
+![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/loo.png)
+
+
+
+### Example 2: Computing Data Shapley Values for Session-Based Recommendations
 
 <span style="font-variant: small-caps;">Illoominate</span> computes Data Shapley values to assess the contribution of each data point to the recommendation performance. Below is an example using the public _Now Playing 1M_ dataset.
 
@@ -104,7 +134,7 @@ print(corrupt_sessions)
 961 rows × 4 columns
 ```
 
-### Example 2: Data Shapley values for Next-Basket Recommendations with TIFU-kNN
+### Example 3: Data Shapley values for Next-Basket Recommendations with TIFU-kNN
 
 To compute Data Shapley values for next-basket recommendations, use the _Tafeng_ dataset.
 
@@ -134,34 +164,6 @@ plt.savefig('images/shapley.png', dpi=300)
 plt.show()
 ```
 ![Distribution of Data Shapley Values](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/shapley.png)
-
-### Example 3: Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN
-
-```python
-# Load training and validation datasets
-train_df = pd.read_csv('data/tafeng/processed/train.csv', sep='\t')
-validation_df = pd.read_csv('data/tafeng/processed/valid.csv', sep='\t')
-
-#  Data Leave-One-Out values
-loo_values = illoominate.data_loo_values(
-    train_df=train_df,
-    validation_df=validation_df,
-    model='tifu',
-    metric='ndcg@10',
-    params={'m':7, 'k':100, 'r_b': 0.9, 'r_g': 0.7, 'alpha': 0.7, 'seed': 42},
-)
-
-# Visualize the distribution of Data Leave-One-Out Values
-plt.hist(shapley_values['score'], density=False, bins=100)
-plt.title('Distribution of Data LOO Values')
-plt.yscale('log')
-plt.ylabel('Frequency')
-plt.xlabel('Data Leave-One-Out Values')
-plt.savefig('images/loo.png', dpi=300)
-plt.show()
-```
-![Data Leave-One-Out values for Next-Basket Recommendations with TIFU-kNN](https://raw.githubusercontent.com/bkersbergen/illoominate/refs/heads/main/data/tafeng/processed/loo.png)
-
 
 ### Example 4: Increasing the Sustainability of Recommendations via Data Pruning
 
@@ -222,6 +224,64 @@ print(train_df_pruned)
 47937	31812	214662819	1.396365e+09	-0.000002
 ```
 
+
+
+## Evaluating a Dataset Using the Python API
+
+<span style="font-variant: small-caps;">Illoominate</span> allows you to train a kNN-based model and evaluate it directly using Python.
+
+### Example: Training & Evaluating VMIS-kNN on NowPlaying1M
+```python
+import illoominate
+import pandas as pd
+
+# Load training and validation datasets
+train_df = pd.read_csv("data/nowplaying1m/train.csv", sep="\t")
+validation_df = pd.read_csv("data/nowplaying1m/valid.csv", sep="\t")
+
+# Define model and evaluation parameters
+model = 'vmis'
+metric = 'mrr@20'
+params = {
+    'm': 500,      # session memory
+    'k': 100,      # number of neighbors
+    'seed': 42     # random seed
+}
+
+# Run training and evaluation
+scores = illoominate.train_and_evaluate_for_sbr(
+    train_df=train_df,
+    validation_df=validation_df,
+    model=model,
+    metric=metric,
+    params=params
+)
+
+print(f"Evaluation score ({metric}):", scores['score'][0])
+
+```
+
+You can also evaluate against a separate test set if needed:
+
+```python
+validation_scores = illoominate.train_and_evaluate_for_sbr(
+    train_df=train_df,
+    validation_df=val_df,
+    model='vmis',
+    metric='mrr@20',
+    params=params
+)
+
+test_scores = illoominate.train_and_evaluate_for_sbr(
+    train_df=train_df,
+    validation_df=test_df,
+    model='vmis',
+    metric='mrr@20',
+    params=params
+)
+```
+
+
 ### Supported Recommendation models and Metrics
 
 `model` (str): Name of the model to use. Supported values:
@@ -246,13 +306,10 @@ print(train_df_pruned)
 
 
 
-
-### How KMC-Shapley Optimizes DSV Estimation
+## How KMC-Shapley Optimizes DSV Estimation
 
 KMC-Shapley (K-nearest Monte Carlo Shapley) enhances the efficiency of Data Shapley value computations by leveraging the sparsity and nearest-neighbor structure of the data. It avoids redundant computations by only evaluating utility changes for impactful neighbors, reducing computational overhead and enabling scalability to large datasets.
 
-
- 
 ### Development Installation
 
 To get started with developing **<span style="font-variant: small-caps;">Illoominate</span>** or conducting the experiments from the paper, follow these steps:
