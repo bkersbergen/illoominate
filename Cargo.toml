@@ -64,6 +64,10 @@ path = "bin/ablation_study.rs"
 name = "scalability_study"
 path = "bin/scalability_study.rs"
 
+[[bin]]
+name = "iteration_benchmark"
+path = "src/bin/iteration_benchmark.rs"
+
 #[[test]]
 #name = "unit-tests"
 #path = "tests/unit_tests/sessrec"
