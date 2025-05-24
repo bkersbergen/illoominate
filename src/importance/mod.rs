@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::marker::{Send, Sync};
 use std::sync::Mutex;
-
+use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::prelude::{IntoParallelIterator, ParallelSliceMut};
 
@@ -158,8 +158,16 @@ pub fn evaluate_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Sync>
         .collect();
 
     score_sessions(test_data, |query_session, actual_next_items| {
+        println!("--- Session");
+        println!("Query: {:?}", query_session.iter().map(|s| s.id).collect_vec());
+        println!("Target: {:?}", actual_next_items.iter().map(|s| s.id).collect_vec());
+
         let neighbors = model.retrieve_k(query_session);
+        println!("Neighbors: {:?}", neighbors.iter().map(|s| s.id).collect_vec());
+
         let recommended_items = model.predict(query_session, &neighbors, 21);
+        println!("Predictions: {:?}", recommended_items.iter().map(|s| s.id).collect_vec());
+        println!("{:?} |-|-|-|-| {:?}", recommended_items, actual_next_items);
 
         metrics.iter().for_each(|metric| {
             let mut metric = metric.lock().unwrap();

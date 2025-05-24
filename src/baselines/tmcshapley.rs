@@ -16,11 +16,21 @@ pub fn tmc_shapley(
     } else {
         (0.0, 0.0)
     };
-    let mut marginal_contribs = Vec::new();
+    let mut accumulated_contributions = Vec::new();
     for iteration in 0..experiment_payload.monte_carlo_iterations {
-        marginal_contribs = one_iteration_dataset(experiment_payload, truncation_enabled, bootstrap_mean_score, bootstrap__tolerance, iteration);
+        let current_contributions = one_iteration_dataset(experiment_payload, truncation_enabled, bootstrap_mean_score, bootstrap__tolerance, iteration);
+        for (id, val) in current_contributions.iter().enumerate() {
+            if id < accumulated_contributions.len() {
+                accumulated_contributions[id] += val;
+            }
+        }
     }
-    marginal_contribs
+    if experiment_payload.monte_carlo_iterations > 0 {
+        for val in accumulated_contributions.iter_mut() {
+            *val /= experiment_payload.monte_carlo_iterations as f64;
+        }
+    }
+    accumulated_contributions
 }
 
 #[allow(non_snake_case)]
