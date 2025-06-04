@@ -1,3 +1,5 @@
+use std::time::Instant;
+use rayon::current_num_threads;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -12,15 +14,15 @@ use crate::sessrec::vmisknn::Scored;
 
 pub struct KMcShapley {
     error: f64,
-    num_iterations: usize,
+    max_shapley_num_iterations: usize,
     seed: usize,
 }
 
 impl KMcShapley {
-    pub fn new(error: f64, num_iterations: usize, seed: usize) -> Self {
+    pub fn new(error: f64, max_shapley_num_iterations: usize, seed: usize) -> Self {
         Self {
             error,
-            num_iterations,
+            max_shapley_num_iterations,
             seed,
         }
     }
@@ -40,7 +42,7 @@ impl Importance for KMcShapley {
             train,
             valid,
             self.error,
-            self.num_iterations,
+            self.max_shapley_num_iterations,
             self.seed,
         )
     }
@@ -51,8 +53,8 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
     metric_factory: &MetricFactory,
     train: &D,
     valid: &D,
-    err: f64,
-    iterations: usize,
+    convergence_threshold: f64,
+    max_shapley_num_iterations: usize,
     seed: usize,
 ) -> HashMap<u32, f64> {
     let mut mem_tmc: HashMap<u32, Vec<f64>> = HashMap::with_capacity(train.len());
@@ -65,43 +67,54 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
         _random_stddev_score
     );
     let mut qty_actual_iterations = 0;
+    log::info!("Running with {} Rayon threads", current_num_threads());
 
-    let bar = ProgressBar::new(iterations as u64);
+    let bar = ProgressBar::new(max_shapley_num_iterations as u64);
     bar.set_style(
         ProgressStyle::default_bar()
-            .template("{wide_bar} Elapsed: {elapsed_precise}, ETA: {eta_precise}")
+            .template("{msg} | Iteration: {pos}/{len} (safety limit) | Elapsed: {elapsed_precise} | ETA (worst case): {eta_precise}")
             .unwrap(),
     );
+    let start_time = Instant::now();
+    let mut mc_error = f64::INFINITY;
+    while qty_actual_iterations < max_shapley_num_iterations {
+        let iter_start = Instant::now();
+        qty_actual_iterations += 1;
+        let marginal_contribs = one_iteration_dataset(
+            model,
+            metric_factory,
+            train,
+            valid,
+            random_score,
+            seed,
+            qty_actual_iterations,
+        );
 
-    while qty_actual_iterations < 10_000 {
-        bar.reset();
-        for iteration in 0..iterations {
-            qty_actual_iterations += 1;
-            let marginal_contribs = one_iteration_dataset(
-                model,
-                metric_factory,
-                train,
-                valid,
-                random_score,
-                seed,
-                iteration,
-            );
-
-            for &key in train.collect_keys().iter() {
-                let entry = mem_tmc.entry(key).or_default();
-                let marginal_contribution = marginal_contribs[key as usize];
-                entry.push(marginal_contribution);
-            }
-            bar.inc(1);
+        for &key in train.collect_keys().iter() {
+            let entry = mem_tmc.entry(key).or_default();
+            let marginal_contribution = marginal_contribs[key as usize];
+            entry.push(marginal_contribution);
         }
-        let mc_error = error_dataset(&mem_tmc, 100);
-        log::info!("mc_error: {:?}", mc_error);
-        if mc_error < err {
-            break;
+        let duration = iter_start.elapsed().as_secs_f64();
+        bar.set_message(format!(
+            "Time/iter: {:.1}s | MC error: {:.1} (goal: {:.1})",
+            duration,
+            mc_error,
+            convergence_threshold
+        ));
+        bar.inc(1);
+        if qty_actual_iterations % 10 == 0 && qty_actual_iterations >= 100 {
+            mc_error = error_dataset(&mem_tmc, 100);
+            log::info!("mc_error: {:?}", mc_error);
+            if mc_error < convergence_threshold {
+                break;
+            }
         }
     }
+    let elapsed = start_time.elapsed().as_secs_f64();
     bar.finish();
-    log::info!("iterations used: {}", qty_actual_iterations);
+    log::info!("Total iterations to convergence: {}", qty_actual_iterations);
+    log::info!("Total wall clock time in seconds: {:.2}", elapsed);
 
     // Calculate average for each session id
     let mut kmc: HashMap<u32, f64> = HashMap::with_capacity(mem_tmc.len());

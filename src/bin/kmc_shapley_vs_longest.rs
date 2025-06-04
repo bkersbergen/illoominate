@@ -55,6 +55,11 @@ fn main() {
     let app_config = IlloominateConfig::load(format!("{}/{}", data_location, config_filename).as_str()).expect("Failed to load config file");
     log::info!("{:?}", app_config);
 
+    let available_threads = num_cpus::get_physical();
+    let preferred_threads = max(1, available_threads);
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(preferred_threads)
+        .build_global().expect("TODO: initializing Rayon thread pool failed");
     let metric_config = create_metric_config(&app_config);
 
     run_experiment(&data_location, &app_config, &metric_config);
@@ -82,11 +87,11 @@ fn run_experiment(data_path: &str, app_config: &IlloominateConfig, metric_config
     for seed in [1313] {
         log::info!("determine removal impact with seed: {}", seed);
 
-        let shapley_error = 2.0;
-        let shapley_num_iterations = 5;
+        let shapley_error = 0.1;
+        let max_shapley_num_iterations = 10000;
 
         let k_loo_algorithm = KLoo::new();
-        let kmc_shapley_algorithm = KMcShapley::new(shapley_error, shapley_num_iterations, seed);
+        let kmc_shapley_algorithm = KMcShapley::new(shapley_error, max_shapley_num_iterations, seed);
 
         let (loo_importances, shap_values, longest_sessions) = if is_vmis {
             if let Some((session_train, session_valid, _session_test)) = &datasets.session_datasets {
