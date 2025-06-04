@@ -32,3 +32,8 @@ Evaluation Criteria
 * Compare the model’s predictive performance after each pruning step for both heuristics.
 * Analyze whether removing low-Shapley sessions retains better model accuracy compared to removing the longest sessions.
 * Investigate the impact of data reduction on overfitting and generalization.
+
+
+```bash
+DATA_LOCATION=data/11306_copy CONFIG_FILENAME=config.toml cargo run --release --bin kmc_shapley_vs_longest
+```

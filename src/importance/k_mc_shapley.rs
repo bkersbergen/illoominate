@@ -72,7 +72,7 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
     let bar = ProgressBar::new(max_shapley_num_iterations as u64);
     bar.set_style(
         ProgressStyle::default_bar()
-            .template("{msg} | Iteration: {pos}/{len} (safety limit) | Elapsed: {elapsed_precise} | ETA (worst case): {eta_precise}")
+            .template("{msg} | Monte Carlo Iteration: {pos} | Elapsed: {elapsed_precise} | ETA (worst case): {eta_precise}")
             .unwrap(),
     );
     let start_time = Instant::now();
@@ -105,7 +105,7 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
         bar.inc(1);
         if qty_actual_iterations % 10 == 0 && qty_actual_iterations >= 100 {
             mc_error = error_dataset(&mem_tmc, 100);
-            log::info!("mc_error: {:?}", mc_error);
+            log::debug!("mc_error: {:?}", mc_error);
             if mc_error < convergence_threshold {
                 break;
             }

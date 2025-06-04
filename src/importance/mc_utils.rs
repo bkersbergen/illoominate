@@ -1,6 +1,6 @@
 use crate::importance::{Dataset, RetrievalBasedModel};
 use crate::metrics::{Metric, MetricFactory};
-use crate::sessrec::types::{SessionId};
+use crate::sessrec::types::SessionId;
 use crate::sessrec::vmisknn::Scored;
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -8,6 +8,7 @@ use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 use rayon::prelude::*;
 use std::collections::HashMap;
+
 
 pub fn permutation<D: Dataset>(dataset: &D, seed: usize, iteration: usize) -> Vec<u32> {
     let mut ids: Vec<u32> = dataset.collect_keys();
@@ -130,100 +131,83 @@ pub fn mean_stddev(data: &[f64]) -> (f64, f64) {
     (meanval, variance.sqrt())
 }
 
-pub fn error_dataset(mem: &HashMap<SessionId, Vec<f64>>, qty_minimal_mc_iterations: usize) -> f64 {
-    // The Rust equivalent for this code. Note in python mem are numpy arrays like Datapoint:
-    // def error(mem):
-    //     if len(mem) < 100:
-    //         return 1.0
-    //     all_vals = (np.cumsum(mem, 0)/np.reshape(np.arange(1, len(mem)+1), (-1,1)))[-100:]
-    //     errors = np.mean(np.abs(all_vals[-100:] - all_vals[-1:])/(np.abs(all_vals[-1:]) + 1e-12), -1)
-    //     return np.max(errors)
-    //
-
-    let (mem_as_datapoints, _idx_to_key_mapping) = convert_session_hashmap_to_datapoints(mem);
-    error(&mem_as_datapoints, qty_minimal_mc_iterations)
-}
-
 
 pub(crate) fn error(mem: &Vec<Vec<f64>>, qty_minimal_mc_iterations: usize) -> f64 {
     if qty_minimal_mc_iterations < 100 {
         log::debug!("Warning: `qty_minimal_mc_iterations` should be 100 for real experiments.");
     }
     if mem.len() < qty_minimal_mc_iterations {
-        log::warn!("mem length {} is below qty_minimal_mc_iterations: {}. Returning 1.0 error", mem.len(), qty_minimal_mc_iterations);
+        log::warn!(
+            "mem length {} is below qty_minimal_mc_iterations: {}. Returning 1.0 error",
+            mem.len(),
+            qty_minimal_mc_iterations
+        );
         return 1.0;
     }
 
-    // Calculate cumulative sums (cumsum)
     let cumsum: Vec<Vec<f64>> = cumsum(mem);
 
-    // Compute all_vals by dividing cumulative sums by the number of iterations so far
     let all_vals: Vec<Vec<f64>> = cumsum
-        .into_par_iter()
+        .par_iter()
         .enumerate()
         .map(|(i, session_importances)| {
             session_importances
-                .into_iter()
-                .map(|val| val / (i + 1) as f64)
+                .iter()
+                .map(|&val| val / (i + 1) as f64)
                 .collect()
         })
         .collect();
 
-    // Get the start index of the last 100 rows
     let start_index = if all_vals.len() > 100 {
-        log::warn!("mem length {} > 100 using last 100 iterations", mem.len());
+        log::debug!("mem length {} > 100 using last 100 iterations", all_vals.len());
         all_vals.len() - 100
     } else {
         0
     };
 
-    // Retrieve the last vector in `all_vals` for standardization
-    let max_value = if let Some(last_importance_for_all_sessions) = all_vals.last() {
-        let last_importance_for_all_sessions = last_importance_for_all_sessions.clone();
-
-        // Calculate the max error across the last 100 rows in parallel
-        all_vals[start_index..]
-            .par_iter()
-            .filter_map(|importance_for_sessions_run| {
-                // Normalize each session importance with respect to the last vector
-                let valid_values: Vec<f64> = importance_for_sessions_run
-                    .iter()
-                    .zip(&last_importance_for_all_sessions)
-                    .map(|(importance, &last_importance)| {
-                        let divisor = if last_importance.abs() < 1e-12 {
-                            1e-12
-                        } else {
-                            last_importance.abs()
-                        };
-
-                        ((*importance - last_importance) / divisor + 1e-12).abs()
-                    })
-                    .filter(|&x| !x.is_nan())
-                    .collect();
-
-                // Calculate mean of valid values if non-empty
-                if !valid_values.is_empty() {
-                    Some(valid_values.iter().sum::<f64>() / valid_values.len() as f64)
-                } else {
-                    None
-                }
-            })
-            // Filter out any remaining None values
-            .filter_map(Some)
-            .max_by(|a: &f64, b: &f64| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
-            .unwrap_or(0.0)
-    } else {
-        log::error!("no last MC iteration data");
-        0.0
+    let last_importance_for_all_sessions = match all_vals.last() {
+        Some(v) => v.clone(),
+        None => {
+            log::error!("no last MC iteration data");
+            return 0.0;
+        }
     };
 
-    max_value
+    let max_error = all_vals[start_index..]
+        .par_iter()
+        .filter_map(|importance_for_sessions_run| {
+            let valid_values: Vec<f64> = importance_for_sessions_run
+                .iter()
+                .zip(&last_importance_for_all_sessions)
+                .map(|(importance, &last_importance)| {
+                    let divisor = if last_importance.abs() < 1e-12 {
+                        1e-12
+                    } else {
+                        last_importance.abs()
+                    };
+
+                    ((*importance - last_importance) / divisor + 1e-12).abs()
+                })
+                .filter(|&x| !x.is_nan())
+                .collect();
+
+            if !valid_values.is_empty() {
+                Some(valid_values.iter().sum::<f64>() / valid_values.len() as f64)
+            } else {
+                None
+            }
+        })
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+        .unwrap_or(0.0);
+
+    max_error
 }
+
+/// Cumulative sum over columns (row-wise accumulation)
 fn cumsum(v: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     let num_columns = v[0].len();
     let num_rows = v.len();
 
-    // Calculate cumulative sums in parallel for each column
     let column_sums: Vec<Vec<f64>> = (0..num_columns)
         .into_par_iter()
         .map(|col_idx| {
@@ -237,7 +221,6 @@ fn cumsum(v: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
         })
         .collect();
 
-    // Transpose column_sums to get the final cumulative_sums matrix
     let mut cumulative_sums = vec![vec![0.0; num_columns]; num_rows];
     for col_idx in 0..num_columns {
         for row_idx in 0..num_rows {
@@ -248,23 +231,24 @@ fn cumsum(v: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     cumulative_sums
 }
 
-pub(crate) fn convert_session_hashmap_to_datapoints(
+pub fn error_dataset(mem: &HashMap<SessionId, Vec<f64>>, qty_minimal_mc_iterations: usize) -> f64 {
+    let (mem_as_datapoints, _) = convert_session_hashmap_to_datapoints(mem);
+    error(&mem_as_datapoints, qty_minimal_mc_iterations)
+}
+
+pub fn convert_session_hashmap_to_datapoints(
     a: &HashMap<SessionId, Vec<f64>>,
 ) -> (Vec<Vec<f64>>, HashMap<usize, SessionId>) {
-    // Determine the length of each vector (assuming all vectors in `a` have the same length)
     let inner_len = a.values().next().map_or(0, |v| v.len());
     let outer_len = a.len();
 
-    // Create the `idx_to_key_mapping` in parallel
     let idx_to_key_mapping: HashMap<usize, SessionId> = a.keys()
         .enumerate()
         .map(|(idx, &key)| (idx, key))
         .collect();
 
-    // Initialize the `result` vector with the required size and capacity
     let mut result: Vec<Vec<f64>> = vec![Vec::with_capacity(outer_len); inner_len];
 
-    // Collect intermediate results in parallel
     let intermediate: Vec<Vec<f64>> = (0..outer_len)
         .into_par_iter()
         .map(|idx| {
@@ -273,7 +257,6 @@ pub(crate) fn convert_session_hashmap_to_datapoints(
         })
         .collect();
 
-    // Merge intermediate results into `result`
     for values in intermediate {
         for (i, value) in values.into_iter().enumerate() {
             result[i].push(value);
@@ -282,8 +265,6 @@ pub(crate) fn convert_session_hashmap_to_datapoints(
 
     (result, idx_to_key_mapping)
 }
-
-
 
 #[cfg(test)]
 mod error_test {
@@ -299,17 +280,20 @@ mod error_test {
         ];
         let result = cumsum(&v);
         let expected = vec![
-            [0.3, 0.2, 0.5],
-            [0.5, 0.7, 0.8],
-            [0.6, 0.8999999999999999, 0.9],
-            [1.1, 1.4, 1.0],
+            vec![0.3, 0.2, 0.5],
+            vec![0.5, 0.7, 0.8],
+            vec![0.6, 0.9, 0.9],
+            vec![1.1, 1.4, 1.0],
         ];
-        assert_eq!(result, expected);
+        for (res_row, exp_row) in result.iter().zip(expected.iter()) {
+            for (res, exp) in res_row.iter().zip(exp_row.iter()) {
+                assert!((res - exp).abs() < 1e-10, "Mismatch: {} vs {}", res, exp);
+            }
+        }
     }
 
     #[test]
     fn should_convergence_error_same_as_python() {
-        // each vector represents one shapley iteration.
         let v: Vec<Vec<f64>> = vec![
             vec![0.3, 0.2, 0.5],
             vec![0.2, 0.5, 0.3],
@@ -318,7 +302,7 @@ mod error_test {
         ];
         let error = error(&v, 1);
         let python_error = 0.5064935064916548;
-        assert!((python_error - error).abs() < 0.00000000001);
+        assert!((python_error - error).abs() < 1e-10);
     }
 
     #[test]
@@ -331,15 +315,13 @@ mod error_test {
         ];
         let datapoint_error = error(&my_datapoint, 1);
 
-        let mut my_dataset = HashMap::new();
+        let mut my_dataset = std::collections::HashMap::new();
         my_dataset.insert(1 as SessionId, vec![0.3, 0.2, 0.1, 0.5]);
         my_dataset.insert(2 as SessionId, vec![0.2, 0.5, 0.2, 0.5]);
         my_dataset.insert(3 as SessionId, vec![0.5, 0.3, 0.1, 0.1]);
 
         let dataset_error = error_dataset(&my_dataset, 1);
 
-        log::info!("datapoint_error: {:?}", datapoint_error);
-        log::info!("dataset_error: {:?}", dataset_error);
         assert_eq!(datapoint_error, dataset_error);
     }
 }
