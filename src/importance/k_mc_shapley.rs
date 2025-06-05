@@ -90,6 +90,8 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
             qty_actual_iterations,
         );
 
+        let performance: f64 = marginal_contribs.par_iter().sum();
+
         for &key in train.collect_keys().iter() {
             let entry = mem_tmc.entry(key).or_default();
             let marginal_contribution = marginal_contribs[key as usize];
@@ -97,8 +99,9 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
         }
         let duration = iter_start.elapsed().as_secs_f64();
         bar.set_message(format!(
-            "Time/iter: {:.1}s | MC error: {:.1} (goal: {:.1})",
+            "Time/iter: {:.1}s | Metric Score: {:.3} | MC error: {:.1} (goal: {:.1})",
             duration,
+            performance,
             mc_error,
             convergence_threshold
         ));
@@ -161,24 +164,20 @@ pub fn one_iteration_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + 
                 let metric_binding = metric_factory.create_importance_metric();
                 let metric = metric_binding.as_ref();
 
-                // let mut agg = model.create_preaggregate();
+                let mut agg = model.create_preaggregate();
 
                 for neighbor in N_q {
-                    let (topk_updated, _dropped_out) = candidate_neighbors.offer(neighbor);
+                    let (topk_updated, dropped_out) = candidate_neighbors.offer(neighbor);
                     if topk_updated {
-                        let neighbors: Vec<_> = candidate_neighbors.iter().cloned().collect();
+                        &model.add_to_preaggregate(&mut agg, &input, &neighbor);
 
-                        // &model.add_to_preaggregate(&mut agg, input, &similar_session);
-                        //
-                        // if dropped_out.is_some() {
-                        //     &model.remove_from_preaggregate(&mut agg, &input, &dropped_out.unwrap());
-                        // }
-                        //
-                        // //let neighbors: Vec<_> = candidate_neighbors.iter().collect();
-                        //
-                        // let recommended_items = &model.generate_from_preaggregate(input, &agg);
+                        if dropped_out.is_some() {
+                            &model.remove_from_preaggregate(&mut agg, &input, &dropped_out.unwrap());
+                        }
 
-                        let recommended_items = &model.predict(input, &neighbors, 21);
+                        //let neighbors: Vec<_> = candidate_neighbors.iter().collect();
+
+                        let recommended_items = &model.generate_from_preaggregate(input, &agg);
 
                         let metric_result = metric.compute(recommended_items, &target);
 

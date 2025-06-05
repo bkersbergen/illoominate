@@ -55,8 +55,8 @@ fn main() {
     let app_config = IlloominateConfig::load(format!("{}/{}", data_location, config_filename).as_str()).expect("Failed to load config file");
     log::info!("{:?}", app_config);
 
-    let available_threads = num_cpus::get_physical();
-    let preferred_threads = max(1, available_threads);
+    let available_logical_cpus = num_cpus::get();
+    let preferred_threads = max(1, available_logical_cpus / 2);
     rayon::ThreadPoolBuilder::new()
         .num_threads(preferred_threads)
         .build_global().expect("TODO: initializing Rayon thread pool failed");
