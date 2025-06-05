@@ -75,6 +75,7 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
             .template("{msg} | Monte Carlo Iteration: {pos} | Elapsed: {elapsed_precise} | ETA (worst case): {eta_precise}")
             .unwrap(),
     );
+    let mut last_message: String = String::new();
     let start_time = Instant::now();
     let mut mc_error = f64::INFINITY;
     while qty_actual_iterations < max_shapley_num_iterations {
@@ -98,14 +99,21 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
             entry.push(marginal_contribution);
         }
         let duration = iter_start.elapsed().as_secs_f64();
-        bar.set_message(format!(
+        let current_message: String = format!(
             "Time/iter: {:.1}s | Metric Score: {:.3} | MC error: {:.1} (goal: {:.1})",
             duration,
             performance,
             mc_error,
             convergence_threshold
-        ));
+        );
+
+        last_message.clear();
+        last_message.push_str(&current_message.clone());
+
+        bar.set_message(last_message.clone());
         bar.inc(1);
+
+
         if qty_actual_iterations % 10 == 0 && qty_actual_iterations >= 100 {
             mc_error = error_dataset(&mem_tmc, 100);
             log::debug!("mc_error: {:?}", mc_error);
@@ -115,7 +123,7 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
         }
     }
     let elapsed = start_time.elapsed().as_secs_f64();
-    bar.finish();
+    bar.finish_with_message(last_message);
     log::info!("Total iterations to convergence: {}", qty_actual_iterations);
     log::info!("Total wall clock time in seconds: {:.2}", elapsed);
 
