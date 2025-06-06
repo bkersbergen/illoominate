@@ -76,7 +76,6 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
             .unwrap(),
     );
     let mut last_message: String = String::new();
-    let start_time = Instant::now();
     let mut mc_error = f64::INFINITY;
     while qty_actual_iterations < max_shapley_num_iterations {
         let iter_start = Instant::now();
@@ -122,10 +121,8 @@ fn importance_kmc_dataset<R: RetrievalBasedModel + Send + Sync, D: Dataset + Syn
             }
         }
     }
-    let elapsed = start_time.elapsed().as_secs_f64();
+    bar.set_length(qty_actual_iterations as u64);
     bar.finish_with_message(last_message);
-    log::info!("Total iterations to convergence: {}", qty_actual_iterations);
-    log::info!("Total wall clock time in seconds: {:.2}", elapsed);
 
     // Calculate average for each session id
     let mut kmc: HashMap<u32, f64> = HashMap::with_capacity(mem_tmc.len());
