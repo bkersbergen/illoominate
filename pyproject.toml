@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "illoominate"
-version = "0.9.2"
+version = "0.9.3"
 description = "A scalable library designed to compute data importance scores for interaction data in sequential kNN-based recommender systems."
 readme = "README.md"
 #license = "Apache-2.0"
