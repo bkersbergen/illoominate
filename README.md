@@ -1,26 +1,46 @@
 # Illoominate - Data Importance for Recommender Systems
 
-[//]: # (![PyPI Downloads]&#40;https://img.shields.io/pypi/dm/illoominate&#41;)
+[![DOI](https://img.shields.io/badge/DOI-10.1145%2F3705328.3748049-blue.svg)](https://doi.org/10.1145/3705328.3748049)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-green.svg)](https://opensource.org/licenses/Apache-2.0)
+[![RecSys 2025](https://img.shields.io/badge/RecSys-2025-green.svg)](https://recsys.acm.org/recsys25/)
+[![PyPI](https://img.shields.io/pypi/v/illoominate.svg)](https://pypi.org/project/illoominate/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/illoominate.svg)](https://pypi.org/project/illoominate/)
 
-<span style="font-variant: small-caps;">Illoominate</span> is a scalable library designed to compute data importance scores for interaction data in recommender systems. It supports the computation of Data Shapley values (DSV) and leave-one-out (LOO) scores, offering insights into the relevance and quality of data in large-scale sequential kNN-based recommendation models. This library is tailored for sequential kNN-based algorithms including session-based recommendation and next-basket recommendation tasks, and it efficiently handles real-world datasets with millions of interactions.
+<span style="font-variant: small-caps;">Illoominate</span> is a library that implements the KMC-Shapley algorithm for computing data importance scores in recommender systems. The KMC-Shapley algorithm leverages the sparsity and nearest-neighbor structure of sequential kNN-based recommendation models to efficiently compute Data Shapley values (DSV) and leave-one-out (LOO) scores. This algorithmic approach enables scalable data debugging and importance analysis for real-world datasets with millions of interactions in session-based and next-basket recommendation tasks.
 
-This repository contains the code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies the scientific manuscript which is under review.
+This repository contains the official code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies our paper accepted at RecSys 2025. The paper is available with open access at [https://dl.acm.org/doi/10.1145/3705328.3748049](https://dl.acm.org/doi/10.1145/3705328.3748049).
+
+**Citation:**
+```bibtex
+@inproceedings{kersbergen-2025-scalable,
+author = {Kersbergen, Barrie and Sprangers, Olivier and Karla{\v s}, Bojan and de Rijke, Maarten and Schelter, Sebastian},
+booktitle = {RecSys 2025: 19th ACM Conference on Recommender Systems},
+date-added = {2025-07-03 20:57:23 +0200},
+date-modified = {2025-07-03 21:01:57 +0200},
+month = {September},
+publisher = {ACM},
+title = {Scalable Data Debugging for Neighborhood-based Recommendation with Data Shapley Values},
+year = {2025}}
+```
 
 ### Key Features
 
-- Scalable: Optimized for large datasets with millions of interactions.
-- Efficient Computation: Uses the KMC-Shapley algorithm to speed up the estimation of Data Shapley values, making it suitable for real-world sequential kNN-based recommendation systems.
-- Customizable: Supports multiple recommendation models, including VMIS-kNN (session-based) and TIFU-kNN (next-basket), and supports popular metrics such as MRR, NDCG, Recall, F1 etc.
-- Real-World Application: Focuses on practical use cases, including debugging, data pruning, and improving sustainability in recommendations.
+- **KMC-Shapley Algorithm**: Implements the novel K-Monte Carlo Shapley algorithm that exploits the sparsity and nearest-neighbor structure of kNN-based models to efficiently compute Data Shapley values.
+- **Scalable Data Debugging**: Enables data importance analysis on large datasets with millions of interactions through algorithmic optimization rather than just computational efficiency.
+- **Multiple Model Support**: Works with sequential kNN-based recommendation models including VMIS-kNN (session-based) and TIFU-kNN (next-basket), supporting popular metrics such as MRR, NDCG, Recall, F1 etc.
+- **Practical Applications**: Designed for real-world use cases including data debugging, quality assessment, data pruning, and sustainable recommendation systems.
 
 ## Overview
 
-<span style="font-variant: small-caps;">Illoominate</span> is implemented in Rust with a Python frontend. It is optimized to scale with datasets containing millions of interactions, commonly found in real-world recommender systems. The library includes KNN-based models VMIS-kNN and TIFU-kNN, used for session-based recommendations and next-basket recommendations.
+<span style="font-variant: small-caps;">Illoominate</span> implements the KMC-Shapley algorithm, which is specifically designed for sequential kNN-based recommendation models. The algorithm's key insight is that most data points in kNN-based systems only influence a small subset of predictions through their nearest-neighbor relationships. By exploiting this sparsity, KMC-Shapley avoids redundant computations and enables scalable Data Shapley value estimation.
 
-By leveraging the Data Shapley value, <span style="font-variant: small-caps;">Illoominate</span> helps data scientists and engineers:
-- Debug potentially corrupted data
-- Improve recommendation quality by identifying impactful data points
-- Prune training data for sustainable item recommendations
+The library provides a Python frontend with Rust backend implementation, supporting KNN-based models VMIS-kNN (session-based) and TIFU-kNN (next-basket) for real-world recommendation scenarios.
+
+By leveraging the KMC-Shapley algorithm, <span style="font-variant: small-caps;">Illoominate</span> enables data scientists and engineers to:
+- Debug potentially corrupted data through efficient importance scoring
+- Improve recommendation quality by identifying the most impactful data points
+- Prune training data for sustainable and efficient recommendation systems
 
 ## Getting Started
 ### Quick Installation
@@ -306,9 +326,16 @@ test_scores = illoominate.train_and_evaluate_for_sbr(
 
 
 
-## How KMC-Shapley Optimizes DSV Estimation
+## The KMC-Shapley Algorithm
 
-KMC-Shapley (K-nearest Monte Carlo Shapley) enhances the efficiency of Data Shapley value computations by leveraging the sparsity and nearest-neighbor structure of the data. It avoids redundant computations by only evaluating utility changes for impactful neighbors, reducing computational overhead and enabling scalability to large datasets.
+KMC-Shapley (K Monte Carlo Shapley) is a novel algorithm specifically designed for computing Data Shapley values in kNN-based recommendation systems. The algorithm's core innovation lies in recognizing that most data points in kNN-based models only influence predictions through their nearest-neighbor relationships, creating inherent sparsity in the importance computation.
+
+**Key Algorithmic Insights:**
+- **Sparsity Exploitation**: The algorithm identifies that most data points only affect a small subset of predictions, avoiding unnecessary computations
+- **Nearest-Neighbor Structure**: Leverages the kNN model's structure to focus importance calculations on relevant neighbor relationships
+- **Monte Carlo Optimization**: Uses strategic sampling to estimate Shapley values while maintaining theoretical guarantees
+
+This algorithmic approach enables scalable Data Shapley value computation on datasets with millions of interactions, making it practical for real-world recommendation systems.
 
 ### Development Installation
 
@@ -332,7 +359,7 @@ maturin develop --release
 
 
 #### Conduct experiments from paper
-The experiments from the paper are available in Rust code.
+The experiments from the paper are implemented in Rust for performance benchmarking. Rust's memory safety and performance characteristics make it well-suited for the computational benchmarks, while the core KMC-Shapley algorithm provides the algorithmic efficiency for scalable Data Shapley value computation.
 
 Prepare a config file for a dataset, describing the model, model parameters and the evaluation metric.
 ```bash
@@ -355,13 +382,13 @@ DATA_LOCATION=data/tafeng/processed CONFIG_FILENAME=config.toml cargo run --rele
 ```
 
 ## Licensing and Copyright
-This code is made available exclusively for peer review purposes.
-Upon acceptance of the accompanying manuscript, the repository will be released under the Apache License 2.0.
-© 2024 Barrie Kersbergen. All rights reserved.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+© 2024 All rights reserved.
 
 ## Notes
-For any queries or further support, please refer to the scientific manuscript under review.
-Contributions and discussions are welcome after open-source release.
+For any queries or further support, please refer to our RecSys 2025 paper.
+Contributions and discussions are welcome!
 
 
 # Releasing a new version of Illoominate
