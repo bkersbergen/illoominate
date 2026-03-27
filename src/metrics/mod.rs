@@ -96,10 +96,9 @@ impl<'a> MetricFactory<'a> {
                 self.config.alpha,
                 self.config.length,
             )),
-            MetricType::SustainabilityCoverageTerm => Box::new(St::new(
-                &self.product_info,
-                self.config.length,
-            )),
+            MetricType::SustainabilityCoverageTerm => {
+                Box::new(St::new(&self.product_info, self.config.length))
+            }
             MetricType::Ndcg => Box::new(Ndcg::new(self.config.length)),
         }
     }

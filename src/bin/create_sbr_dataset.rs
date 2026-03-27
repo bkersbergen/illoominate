@@ -84,7 +84,9 @@ fn filter_and_save_validation_and_test(
 
     // Collect interactions, filtering out items not in training data
     for interaction in mapped_interactions {
-        if !training_sessions.contains(&interaction.session_id) && item_ids_in_training.contains(&interaction.item_id) {
+        if !training_sessions.contains(&interaction.session_id)
+            && item_ids_in_training.contains(&interaction.item_id)
+        {
             session_interactions
                 .entry(interaction.session_id)
                 .or_default()
@@ -214,8 +216,7 @@ fn split_sessions(
     let (validation_sessions, test_sessions) = valtest_sessions.split_at(valtest_split_index);
 
     let training_sessions: HashSet<SessionId> = training_sessions.iter_mut().map(|x| *x).collect();
-    let validation_sessions: HashSet<SessionId> =
-        validation_sessions.iter().copied().collect();
+    let validation_sessions: HashSet<SessionId> = validation_sessions.iter().copied().collect();
     let test_sessions: HashSet<SessionId> = test_sessions.iter().copied().collect();
 
     (training_sessions, validation_sessions, test_sessions)

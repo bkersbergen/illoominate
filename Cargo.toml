@@ -1,6 +1,6 @@
 [package]
 name = "illoominate"
-version = "0.1.0"
+version = "0.9.4"
 edition = "2021"
 #rust-version = "1.82"
 
@@ -9,11 +9,6 @@ edition = "2021"
 name = "illoominate"
 # "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib", "rlib"]
-
-# Instruct maturin to use this __init__.py
-[tool.maturin]
-python-source = "python"
-module-name = "illoominate._lib_name"
 
 
 [dependencies]
@@ -55,14 +50,6 @@ harness = false
 [[bench]]
 name = "benchmark_shapley"
 harness = false
-
-[[example]]
-name = "ablation_study"
-path = "bin/ablation_study.rs"
-
-[[example]]
-name = "scalability_study"
-path = "bin/scalability_study.rs"
 
 #[[test]]
 #name = "unit-tests"

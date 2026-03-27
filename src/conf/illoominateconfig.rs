@@ -92,7 +92,6 @@ pub fn create_metric_config(app_config: &IlloominateConfig) -> MetricConfig {
         invalid => panic!("Invalid metric type: {}", invalid), // Include invalid value in panic message
     };
 
-    
     MetricConfig {
         importance_metric: metric_type.clone(),
         evaluation_metrics: vec![metric_type.clone()],

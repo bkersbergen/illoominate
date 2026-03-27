@@ -134,12 +134,7 @@ where
             }
             local_contributions
         })
-        .reduce_with(|left, right| {
-            left.into_iter()
-                .zip(right)
-                .map(|(x, y)| x + y)
-                .collect()
-        })
+        .reduce_with(|left, right| left.into_iter().zip(right).map(|(x, y)| x + y).collect())
         .unwrap_or_else(|| vec![0.0; num_training_keys]);
 
     contributions

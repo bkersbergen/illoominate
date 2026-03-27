@@ -1,13 +1,13 @@
 use crate::importance::{Dataset, DatasetEntry, Sequence};
+use crate::nbr::tifuknn::io::Purchase;
 use crate::nbr::tifuknn::types::{Basket, UserId};
 use crate::sessrec::vmisknn::Scored;
+use csv::Writer;
+use grouping_by::GroupingBy;
 use itertools::Itertools;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
-use csv::Writer;
-use grouping_by::GroupingBy;
-use crate::nbr::tifuknn::io::Purchase;
 
 #[derive(Clone, Debug)]
 pub struct NextBasketDataset {
@@ -27,7 +27,12 @@ impl NextBasketDataset {
         // Write the data from user_baskets
         for (user_id, baskets) in &self.user_baskets {
             for basket in baskets {
-                let items_str = basket.items.iter().map(|item| item.to_string()).collect::<Vec<String>>().join(", ");
+                let items_str = basket
+                    .items
+                    .iter()
+                    .map(|item| item.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ");
                 wtr.write_record(&[user_id.to_string(), basket.id.to_string(), items_str])?;
             }
         }
@@ -84,7 +89,9 @@ impl Dataset for NextBasketDataset {
     }
 
     fn num_interactions(&self) -> usize {
-        self.user_baskets.values().map(|baskets| baskets.len())
+        self.user_baskets
+            .values()
+            .map(|baskets| baskets.len())
             .sum()
     }
 
@@ -100,7 +107,8 @@ impl Dataset for NextBasketDataset {
         // );
 
         let input_sequence = vec![Scored::new(key, 1.0)];
-        let target_sequence = baskets.first()
+        let target_sequence = baskets
+            .first()
             .unwrap()
             .items
             .iter()

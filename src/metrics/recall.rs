@@ -75,8 +75,8 @@ impl Metric for Recall {
 
 #[cfg(test)]
 mod recall_test {
-    use itertools::Itertools;
     use super::*;
+    use itertools::Itertools;
 
     #[test]
     fn should_calculate_recall() {
@@ -84,14 +84,16 @@ mod recall_test {
         let mut under_test = Recall::new(length);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        ].iter()
-            .map(|&id| Scored::new(id, 1.0))
-            .collect_vec();
-        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4].iter()
+        ]
+        .iter()
+        .map(|&id| Scored::new(id, 1.0))
+        .collect_vec();
+        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         under_test.add(&recommendations, &actual_next_items);
-        assert!((2.0/3.0 - under_test.result()).abs() < f64::EPSILON);
+        assert!((2.0 / 3.0 - under_test.result()).abs() < f64::EPSILON);
         assert_eq!("Recall@20", under_test.get_name());
     }
 
@@ -99,7 +101,8 @@ mod recall_test {
     fn handle_empty_recommendations() {
         let mymetric = Recall::new(20);
         let recommendations: Vec<Scored> = vec![];
-        let actual_next_items: Vec<Scored> = vec![1, 2].iter()
+        let actual_next_items: Vec<Scored> = vec![1, 2]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         let result = mymetric.compute(&recommendations, &actual_next_items);

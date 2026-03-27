@@ -4,14 +4,16 @@ use crate::importance::RetrievalBasedModel;
 use crate::nbr::caboose::sparse_topk_index::SparseTopKIndex;
 use crate::nbr::caboose::types::{Score, SimilarRow};
 use crate::nbr::tifuknn::types::{Basket, HyperParams, SparseItemVector, UserId};
-use crate::sessrec::vmisknn::{Scored};
+use crate::nbr::types::NextBasketDataset;
+use crate::sessrec::vmisknn::Scored;
 use itertools::Itertools;
 use sprs::TriMat;
-use crate::nbr::types::NextBasketDataset;
 
 pub mod hyperparams;
 pub mod io;
 pub mod types;
+
+const PREAGG_NEIGHBOR_COUNT_KEY: u64 = u64::MAX;
 
 pub struct TIFUIndex {
     index: SparseTopKIndex,
@@ -110,7 +112,6 @@ impl TIFUKNN {
     }
 
     pub fn find_neighbors(&self, user_id: &UserId) -> Vec<SimilarRow> {
-        
         self.index.index.neighbors(*user_id)
     }
 
@@ -138,17 +139,7 @@ impl TIFUKNN {
 
         item_weights.plus_mult(alpha, &user_embedding);
 
-        let recommended_items: Vec<_> = item_weights
-            .entries
-            .into_iter()
-            .filter(|(_index, value)| *value > 0.0)
-            .sorted_by_key(|(_index, value)| (value * 10000.0) as isize)
-            .rev()
-            .take(how_many)
-            .map(|(item, score)| Scored::new(item as u32, score))
-            .collect();
-
-        recommended_items
+        Self::rank_item_weights(item_weights, how_many)
     }
 
     pub fn get_all_user_embeddings(&self) -> HashMap<UserId, SparseItemVector> {
@@ -189,13 +180,13 @@ impl TIFUKNN {
 
     pub fn predict(&self, user_id: &UserId, how_many: usize) -> Vec<Scored> {
         let neighbors = self.find_neighbors(user_id);
-        
 
         self.predict_for(user_id, &neighbors, how_many)
     }
 
     fn num_items(all_baskets_by_user: &NextBasketDataset) -> usize {
-        let num_items = all_baskets_by_user.user_baskets
+        let num_items = all_baskets_by_user
+            .user_baskets
             .values()
             .flat_map(|baskets| baskets.iter())
             .flat_map(|basket| basket.items.iter().max())
@@ -207,7 +198,13 @@ impl TIFUKNN {
     }
 
     fn num_users(all_baskets_by_user: &NextBasketDataset) -> usize {
-        let num_users = all_baskets_by_user.user_baskets.keys().max().copied().unwrap_or(0) + 1;
+        let num_users = all_baskets_by_user
+            .user_baskets
+            .keys()
+            .max()
+            .copied()
+            .unwrap_or(0)
+            + 1;
         num_users as usize
     }
 
@@ -237,6 +234,18 @@ impl TIFUKNN {
 
         group_vector
     }
+
+    fn rank_item_weights(item_weights: SparseItemVector, how_many: usize) -> Vec<Scored> {
+        item_weights
+            .entries
+            .into_iter()
+            .filter(|(_index, value)| *value > 0.0)
+            .sorted_by_key(|(_index, value)| (value * 10000.0) as isize)
+            .rev()
+            .take(how_many)
+            .map(|(item, score)| Scored::new(item as u32, score))
+            .collect()
+    }
 }
 
 impl RetrievalBasedModel for TIFUKNN {
@@ -247,10 +256,7 @@ impl RetrievalBasedModel for TIFUKNN {
     fn retrieve_k(&self, query_session: &Vec<Scored>) -> Vec<Scored> {
         if let Some(user_id_score) = query_session.first() {
             let neighbors = self.find_neighbors(&user_id_score.id);
-            neighbors
-                .iter()
-                .map(Scored::from)
-                .collect_vec()
+            neighbors.iter().map(Scored::from).collect_vec()
         } else {
             vec![]
         }
@@ -261,33 +267,89 @@ impl RetrievalBasedModel for TIFUKNN {
     }
 
     fn create_preaggregate(&self) -> HashMap<u64, f64> {
-        todo!()
+        HashMap::new()
     }
 
     fn add_to_preaggregate<T: AsRef<Scored>>(
         &self,
-        _agg: &mut HashMap<u64, f64>,
+        agg: &mut HashMap<u64, f64>,
         _query_session: &Vec<Scored>,
-        _neighbor: &T,
+        neighbor: &T,
     ) {
-        todo!()
+        let neighbor_id = neighbor.as_ref().id;
+        let Some(neighbor_embedding) = self.user_embeddings.get(&neighbor_id) else {
+            return;
+        };
+
+        *agg.entry(PREAGG_NEIGHBOR_COUNT_KEY).or_insert(0.0) += 1.0;
+        for (item_index, value) in neighbor_embedding.entries.iter() {
+            *agg.entry(*item_index as u64).or_insert(0.0) += *value;
+        }
     }
 
     fn remove_from_preaggregate<T: AsRef<Scored>>(
         &self,
-        _agg: &mut HashMap<u64, f64>,
+        agg: &mut HashMap<u64, f64>,
         _query_session: &Vec<Scored>,
-        _neighbor: &T,
+        neighbor: &T,
     ) {
-        todo!()
+        let neighbor_id = neighbor.as_ref().id;
+        let Some(neighbor_embedding) = self.user_embeddings.get(&neighbor_id) else {
+            return;
+        };
+
+        if let Some(count) = agg.get_mut(&PREAGG_NEIGHBOR_COUNT_KEY) {
+            *count -= 1.0;
+            if *count <= f64::EPSILON {
+                agg.remove(&PREAGG_NEIGHBOR_COUNT_KEY);
+            }
+        }
+
+        for (item_index, value) in neighbor_embedding.entries.iter() {
+            let key = *item_index as u64;
+            if let Some(total) = agg.get_mut(&key) {
+                *total -= *value;
+                if total.abs() <= f64::EPSILON {
+                    agg.remove(&key);
+                }
+            }
+        }
     }
 
     fn generate_from_preaggregate(
         &self,
-        _query_session: &Vec<Scored>,
-        _agg: &HashMap<u64, f64>,
+        query_session: &Vec<Scored>,
+        agg: &HashMap<u64, f64>,
     ) -> Vec<Scored> {
-        todo!()
+        let Some(user_id_score) = query_session.first() else {
+            return vec![];
+        };
+
+        let mut item_weights = SparseItemVector::new();
+        let user_embedding = self
+            .user_embeddings
+            .get(&user_id_score.id)
+            .cloned()
+            .unwrap_or_else(SparseItemVector::new);
+        let alpha = self.hyper_params.alpha;
+
+        let num_neighbors = agg
+            .get(&PREAGG_NEIGHBOR_COUNT_KEY)
+            .copied()
+            .unwrap_or(0.0)
+            .round() as usize;
+
+        if num_neighbors > 0 {
+            let neighbor_weight = (1.0 - alpha) * (1.0 / num_neighbors as f64);
+            for (&item_index, &value) in agg.iter() {
+                if item_index != PREAGG_NEIGHBOR_COUNT_KEY {
+                    item_weights.plus_at(item_index as usize, neighbor_weight * value);
+                }
+            }
+        }
+
+        item_weights.plus_mult(alpha, &user_embedding);
+        Self::rank_item_weights(item_weights, 21)
     }
 
     fn predict(
@@ -312,8 +374,79 @@ impl RetrievalBasedModel for TIFUKNN {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::{BTreeMap, HashMap};
 
     // Import everything from the outer module (including TIFUKNN and its dependencies)
+
+    fn build_test_model() -> TIFUKNN {
+        let mut user_baskets = HashMap::new();
+        user_baskets.insert(
+            0,
+            vec![
+                Basket::new(0, vec![1, 2]),
+                Basket::new(1, vec![2, 4]),
+                Basket::new(2, vec![5]),
+            ],
+        );
+        user_baskets.insert(
+            1,
+            vec![
+                Basket::new(0, vec![3, 6]),
+                Basket::new(1, vec![6]),
+                Basket::new(2, vec![7]),
+            ],
+        );
+        user_baskets.insert(
+            2,
+            vec![
+                Basket::new(0, vec![8]),
+                Basket::new(1, vec![9]),
+                Basket::new(2, vec![9]),
+            ],
+        );
+        user_baskets.insert(
+            3,
+            vec![
+                Basket::new(0, vec![10, 11]),
+                Basket::new(1, vec![11]),
+                Basket::new(2, vec![12]),
+            ],
+        );
+
+        let hyper_params = HyperParams {
+            m: 3,
+            r_b: 0.9,
+            r_g: 0.7,
+            alpha: 0.35,
+            k: 3,
+        };
+
+        let dataset = NextBasketDataset { user_baskets };
+        TIFUKNN::new(&dataset, &hyper_params)
+    }
+
+    fn assert_scored_lists_close(actual: Vec<Scored>, expected: Vec<Scored>) {
+        assert_eq!(actual.len(), expected.len());
+        let actual_by_item: BTreeMap<u32, f64> =
+            actual.into_iter().map(|item| (item.id, item.score)).collect();
+        let expected_by_item: BTreeMap<u32, f64> = expected
+            .into_iter()
+            .map(|item| (item.id, item.score))
+            .collect();
+
+        for (item_id, actual_score) in actual_by_item.iter() {
+            let expected_score = expected_by_item
+                .get(item_id)
+                .unwrap_or_else(|| panic!("missing expected score for item {item_id}"));
+            assert!(
+                (actual_score - expected_score).abs() < 1e-9,
+                "score mismatch for item {}: actual={} expected={}",
+                item_id,
+                actual_score,
+                expected_score
+            );
+        }
+    }
 
     #[test]
     fn test_group_function_t_less_than_m() {
@@ -419,5 +552,52 @@ mod tests {
         assert_eq!(result.get(0).unwrap().entries.len(), 1);
         assert_eq!(result.get(1).unwrap().entries.len(), 1);
         assert_eq!(result.get(2).unwrap().entries.len(), 2);
+    }
+
+    #[test]
+    fn test_generate_from_empty_preaggregate_matches_predict() {
+        let model = build_test_model();
+        let query = vec![Scored::new(0, 1.0)];
+        let agg = model.create_preaggregate();
+
+        let actual = model.generate_from_preaggregate(&query, &agg);
+        let expected = RetrievalBasedModel::predict(&model, &query, &vec![], 21);
+
+        assert_scored_lists_close(actual, expected);
+    }
+
+    #[test]
+    fn test_generate_from_preaggregate_matches_predict_for_added_neighbors() {
+        let model = build_test_model();
+        let query = vec![Scored::new(0, 1.0)];
+        let neighbors = vec![Scored::new(1, 0.9), Scored::new(2, 0.8)];
+
+        let mut agg = model.create_preaggregate();
+        for neighbor in &neighbors {
+            model.add_to_preaggregate(&mut agg, &query, neighbor);
+        }
+
+        let actual = model.generate_from_preaggregate(&query, &agg);
+        let expected = RetrievalBasedModel::predict(&model, &query, &neighbors, 21);
+
+        assert_scored_lists_close(actual, expected);
+    }
+
+    #[test]
+    fn test_generate_from_preaggregate_matches_predict_after_neighbor_removal() {
+        let model = build_test_model();
+        let query = vec![Scored::new(0, 1.0)];
+        let kept_neighbor = Scored::new(1, 0.9);
+        let removed_neighbor = Scored::new(2, 0.8);
+
+        let mut agg = model.create_preaggregate();
+        model.add_to_preaggregate(&mut agg, &query, &kept_neighbor);
+        model.add_to_preaggregate(&mut agg, &query, &removed_neighbor);
+        model.remove_from_preaggregate(&mut agg, &query, &removed_neighbor);
+
+        let actual = model.generate_from_preaggregate(&query, &agg);
+        let expected = RetrievalBasedModel::predict(&model, &query, &vec![kept_neighbor], 21);
+
+        assert_scored_lists_close(actual, expected);
     }
 }

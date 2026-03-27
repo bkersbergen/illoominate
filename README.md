@@ -166,13 +166,12 @@ validation_df = pd.read_csv('data/tafeng/processed/valid.csv', sep='\t')
 
 # Compute Data Shapley values
 shapley_values = illoominate.data_shapley_values(
-train_df=train_df,
-validation_df=validation_df,
-model='vmis',
-metric='mrr@20',
-params={'m':500, 'k':100, 'seed': 42, 'convergence_threshold': .1},
+    train_df=train_df,
+    validation_df=validation_df,
+    model='tifu',
+    metric='ndcg@20',
+    params={'m': 7, 'k': 100, 'r_b': 0.9, 'r_g': 0.7, 'alpha': 0.7, 'seed': 42, 'convergence_threshold': .1},
 )
-
 
 # Visualize the distribution of Data Shapley values
 plt.hist(shapley_values['score'], density=False, bins=100)
@@ -301,6 +300,26 @@ test_scores = illoominate.train_and_evaluate_for_sbr(
 )
 ```
 
+### Large Dataset Path
+
+For large session-based datasets, you can avoid loading pandas DataFrames entirely and evaluate directly from delimited files:
+
+```python
+import illoominate
+
+scores = illoominate.train_and_evaluate_for_sbr_files(
+    train_path="data/bol35m/bolcom-clicks-50m_train.txt",
+    validation_path="data/bol35m/bolcom-clicks-50m_test.txt",
+    metric="mrr@20",
+    params={"m": 100, "k": 100, "seed": 42},
+    sep="\t",
+)
+
+print(scores)
+```
+
+This path is intended for large datasets where the pandas to Polars conversion and Python-side indexing overhead would otherwise dominate memory use.
+
 
 ### Supported Recommendation models and Metrics
 
@@ -357,6 +376,8 @@ pip install -r requirements.txt
 maturin develop --release
 ```
 
+The package runtime dependencies are declared in [`pyproject.toml`](pyproject.toml), so `pip install illoominate`, `pip install .`, and `maturin develop` all install the Python libraries required at runtime. The `requirements.txt` file is only for development tooling such as notebooks and local release builds.
+
 
 #### Conduct experiments from paper
 The experiments from the paper are implemented in Rust for performance benchmarking. Rust's memory safety and performance characteristics make it well-suited for the computational benchmarks, while the core KMC-Shapley algorithm provides the algorithmic efficiency for scalable Data Shapley value computation.
@@ -384,7 +405,7 @@ DATA_LOCATION=data/tafeng/processed CONFIG_FILENAME=config.toml cargo run --rele
 ## Licensing and Copyright
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-© 2024 All rights reserved.
+© 2026 All rights reserved.
 
 ## Notes
 For any queries or further support, please refer to our RecSys 2025 paper.

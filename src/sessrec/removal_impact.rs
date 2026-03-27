@@ -3,7 +3,6 @@ use crate::metrics::MetricFactory;
 use crate::sessrec::types::{SessionDataset, SessionId};
 use crate::sessrec::vmisknn::VMISKNN;
 
-
 use std::cmp::max;
 
 use std::fs::{File, OpenOptions};
@@ -69,7 +68,8 @@ pub fn vmis_evaluate_removal_impact<D: Dataset + Sync>(
         // Remove SessionId from the Training data
         if train.sessions.remove(key).is_some() && (train.sessions.len() > 0) {
             num_sessions_removed += 1;
-            let compute_impact = (num_sessions_removed % evaluation_interval == 0) && (num_sessions_removed < max_qty_evaluations);
+            let compute_impact = (num_sessions_removed % evaluation_interval == 0)
+                && (num_sessions_removed < max_qty_evaluations);
             if compute_impact {
                 num_evaluations += 1;
                 // evaluate on validation data and write output

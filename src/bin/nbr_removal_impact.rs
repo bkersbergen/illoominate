@@ -1126,6 +1126,4 @@
 //         .expect(&format!("Failed to create file: {}", name))
 // }
 
-fn main() {
-
-}
+fn main() {}

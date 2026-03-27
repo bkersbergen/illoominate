@@ -1,8 +1,5 @@
-# development packages
+# development-only tooling
 maturin==1.7.4
-polars==1.12.0
-pyarrow==18.0.0
-pandas==2.2.3
 
 jupyter
 matplotlib

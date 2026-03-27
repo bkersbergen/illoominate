@@ -83,15 +83,15 @@ impl Metric for Ndcg {
 
         let dcg: f64 = self.dcg(&top_recos, &next_items);
         let dcg_max: f64 = self.dcg(&top_next_items, &next_items);
-        
+
         dcg / dcg_max
     }
 }
 
 #[cfg(test)]
 mod ndcg_test {
-    use itertools::Itertools;
     use super::*;
+    use itertools::Itertools;
 
     #[test]
     fn should_calculate_ndcg() {
@@ -116,10 +116,12 @@ mod ndcg_test {
         let mymetric = Ndcg::new(20);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        ].iter()
-            .map(|&id| Scored::new(id, 1.0))
-            .collect_vec();
-        let actual_next_items: Vec<Scored> = vec![3, 55, 88, 4].iter()
+        ]
+        .iter()
+        .map(|&id| Scored::new(id, 1.0))
+        .collect_vec();
+        let actual_next_items: Vec<Scored> = vec![3, 55, 88, 4]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         let result = mymetric.compute(&recommendations, &actual_next_items);

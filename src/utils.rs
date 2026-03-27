@@ -1,7 +1,7 @@
-use std::io::Write;
 use chrono::Local;
 use env_logger::Builder;
 use log::LevelFilter;
+use std::io::Write;
 
 pub fn init_logging() {
     Builder::new()

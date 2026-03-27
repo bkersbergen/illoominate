@@ -26,7 +26,8 @@ impl CandidateNeighbors {
     ///
     /// # Returns
     ///
-    /// `true` if the session was added or replaced; `false` otherwise.
+    /// A tuple where the first value indicates whether the set changed, and the
+    /// second value contains the dropped neighbor when a replacement happened.
     ///
     /// # Example
     ///
@@ -35,8 +36,9 @@ impl CandidateNeighbors {
     /// use illoominate::sessrec::vmisknn::Scored;
     /// let mut manager = CandidateNeighbors::new(25);
     /// let session = Scored { id: 0, score: 75.0};
-    /// let added = manager.offer(session);
+    /// let (added, dropped_out) = manager.offer(session);
     /// assert!(added);
+    /// assert!(dropped_out.is_none());
     /// ```
     pub fn offer(&mut self, scored_session: Scored) -> (bool, Option<Scored>) {
         if self.closest_neighbors.len() < self.k {

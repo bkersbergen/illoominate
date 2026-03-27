@@ -1,6 +1,6 @@
 use crate::importance::{Dataset, RetrievalBasedModel};
 use crate::metrics::{Metric, MetricFactory};
-use crate::sessrec::types::{SessionId};
+use crate::sessrec::types::SessionId;
 use crate::sessrec::vmisknn::Scored;
 use itertools::Itertools;
 use rand::rngs::StdRng;
@@ -144,13 +144,16 @@ pub fn error_dataset(mem: &HashMap<SessionId, Vec<f64>>, qty_minimal_mc_iteratio
     error(&mem_as_datapoints, qty_minimal_mc_iterations)
 }
 
-
 pub(crate) fn error(mem: &Vec<Vec<f64>>, qty_minimal_mc_iterations: usize) -> f64 {
     if qty_minimal_mc_iterations < 100 {
         log::warn!("Warning: `qty_minimal_mc_iterations` should be 100 for real experiments.");
     }
     if mem.len() < qty_minimal_mc_iterations {
-        log::debug!("mem length {} is below qty_minimal_mc_iterations: {}. Returning 1.0 error", mem.len(), qty_minimal_mc_iterations);
+        log::debug!(
+            "mem length {} is below qty_minimal_mc_iterations: {}. Returning 1.0 error",
+            mem.len(),
+            qty_minimal_mc_iterations
+        );
         return 1.0;
     }
 
@@ -256,10 +259,8 @@ pub(crate) fn convert_session_hashmap_to_datapoints(
     let outer_len = a.len();
 
     // Create the `idx_to_key_mapping` in parallel
-    let idx_to_key_mapping: HashMap<usize, SessionId> = a.keys()
-        .enumerate()
-        .map(|(idx, &key)| (idx, key))
-        .collect();
+    let idx_to_key_mapping: HashMap<usize, SessionId> =
+        a.keys().enumerate().map(|(idx, &key)| (idx, key)).collect();
 
     // Initialize the `result` vector with the required size and capacity
     let mut result: Vec<Vec<f64>> = vec![Vec::with_capacity(outer_len); inner_len];
@@ -282,8 +283,6 @@ pub(crate) fn convert_session_hashmap_to_datapoints(
 
     (result, idx_to_key_mapping)
 }
-
-
 
 #[cfg(test)]
 mod error_test {

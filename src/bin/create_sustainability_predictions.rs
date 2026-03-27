@@ -3,15 +3,14 @@ use env_logger::Builder;
 
 use illoominate::sessrec::io;
 
-
 use illoominate::sessrec::types::SessionDataset;
 use illoominate::sessrec::vmisknn::{Scored, VMISKNN};
 use itertools::Itertools;
 use log::LevelFilter;
 
+use std::env;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::{env};
 
 fn main() {
     init_logger();

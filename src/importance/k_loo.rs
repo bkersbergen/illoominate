@@ -78,12 +78,7 @@ impl Importance for KLoo {
                 }
                 local_contributions
             })
-            .reduce_with(|left, right| {
-                left.into_iter()
-                    .zip(right)
-                    .map(|(x, y)| x + y)
-                    .collect()
-            })
+            .reduce_with(|left, right| left.into_iter().zip(right).map(|(x, y)| x + y).collect())
             .unwrap_or_else(|| vec![0.0; qty_keys]);
 
         let mut result = HashMap::with_capacity(contributions.len());

@@ -72,8 +72,8 @@ impl Metric for Precision {
 
 #[cfg(test)]
 mod precision_test {
-    use itertools::Itertools;
     use super::*;
+    use itertools::Itertools;
 
     #[test]
     fn should_calculate_precision() {
@@ -81,10 +81,12 @@ mod precision_test {
         let mut mymetric = Precision::new(length);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        ].iter()
-            .map(|&id| Scored::new(id, 1.0))
-            .collect_vec();
-        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4].iter()
+        ]
+        .iter()
+        .map(|&id| Scored::new(id, 1.0))
+        .collect_vec();
+        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         mymetric.add(&recommendations, &actual_next_items);
@@ -96,7 +98,8 @@ mod precision_test {
     fn handle_empty_recommendations() {
         let mymetric = Precision::new(20);
         let recommendations: Vec<Scored> = vec![];
-        let actual_next_items: Vec<Scored> = vec![1, 2].iter()
+        let actual_next_items: Vec<Scored> = vec![1, 2]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         let result = mymetric.compute(&recommendations, &actual_next_items);

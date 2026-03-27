@@ -59,8 +59,8 @@ impl Metric for SustainableMrr<'_> {
 mod responsible_mrr_test {
     use super::*;
     use crate::sessrec::types::ItemId;
-    use std::collections::HashSet;
     use itertools::Itertools;
+    use std::collections::HashSet;
 
     #[test]
     fn should_happyflow_responsible_mrr() {
@@ -71,10 +71,12 @@ mod responsible_mrr_test {
 
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        ].iter()
-            .map(|&id| Scored::new(id, 1.0))
-            .collect_vec();
-        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4].iter()
+        ]
+        .iter()
+        .map(|&id| Scored::new(id, 1.0))
+        .collect_vec();
+        let actual_next_items: Vec<Scored> = vec![3, 55, 3, 4]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
 
@@ -82,7 +84,7 @@ mod responsible_mrr_test {
         let mut sustain_mrr = SustainableMrr::new(&product_info, mrr_alpha, length);
         sustain_mrr.add(&recommendations, &actual_next_items);
 
-        assert_eq!(format!("ResponsibleMrr@{length}"), sustain_mrr.get_name());
+        assert_eq!(format!("SustainableMrr@{length}"), sustain_mrr.get_name());
         assert!((0.29666666666666663 - sustain_mrr.result()).abs() < f64::EPSILON);
     }
 
@@ -96,7 +98,8 @@ mod responsible_mrr_test {
         let mrr_alpha = 0.8;
         let mymetric = SustainableMrr::new(&product_info, mrr_alpha, length);
         let recommendations: Vec<Scored> = vec![];
-        let actual_next_items: Vec<Scored> = vec![1, 2].iter()
+        let actual_next_items: Vec<Scored> = vec![1, 2]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         let result = mymetric.compute(&recommendations, &actual_next_items);

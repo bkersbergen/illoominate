@@ -1,12 +1,11 @@
-use std::cmp::{Ordering, Reverse};
-use std::collections::hash_map::Entry;
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use crate::importance::RetrievalBasedModel;
 use dary_heap::OctonaryHeap;
 use itertools::Itertools;
 
-use crate::nbr::caboose::types::{SimilarRow};
+use crate::nbr::caboose::types::SimilarRow;
 use crate::sessrec::types::{ItemId, SessionDataset, SessionId, Time};
 use topk::TopK;
 
@@ -16,7 +15,6 @@ pub mod topk;
 pub struct VMISIndex {
     pub(crate) item_to_top_sessions_ordered: HashMap<u64, Vec<u32>>,
     pub session_to_max_time_stamp: Vec<u32>,
-    pub(crate) item_to_idf_score: HashMap<u64, f64>,
     pub session_to_items_sorted: Vec<Vec<u64>>,
     pub session_idx_to_id: HashMap<usize, usize>,
 }
@@ -25,6 +23,51 @@ pub struct VMISKNN {
     pub index: VMISIndex,
     m: usize,
     k: usize, // top-k scored historical sessions out of the 'm' historical sessions
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct FindNeighborsStats {
+    pub prepare_ns: u64,
+    pub accumulate_ns: u64,
+    pub rank_ns: u64,
+    pub unique_query_items: u64,
+    pub similar_session_visits: u64,
+}
+
+#[derive(Clone, Debug)]
+pub struct ProfiledNeighbors {
+    pub neighbors: Vec<Scored>,
+    pub stats: FindNeighborsStats,
+}
+
+#[derive(Eq, Debug)]
+pub struct SessionTime {
+    pub session_id: u32,
+    pub time: u32,
+}
+
+impl SessionTime {
+    pub fn new(session_id: u32, time: u32) -> Self {
+        SessionTime { session_id, time }
+    }
+}
+
+impl Ord for SessionTime {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.time.cmp(&self.time)
+    }
+}
+
+impl PartialOrd for SessionTime {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for SessionTime {
+    fn eq(&self, other: &Self) -> bool {
+        self.session_id == other.session_id
+    }
 }
 
 impl VMISKNN {
@@ -37,13 +80,11 @@ impl VMISKNN {
         let item_to_top_sessions_ordered =
             create_most_recent_sessions_per_item(training_dataset, m_most_recent_sessions);
         let session_to_max_time_stamp = create_session_to_max_time_stamp(training_dataset);
-        let item_to_idf_score = create_item_idf(training_dataset);
         let session_to_items_sorted = create_session_to_items(training_dataset);
         VMISKNN {
             index: VMISIndex {
                 item_to_top_sessions_ordered,
                 session_to_max_time_stamp,
-                item_to_idf_score,
                 session_to_items_sorted,
                 session_idx_to_id: HashMap::new(),
             },
@@ -61,51 +102,31 @@ impl VMISKNN {
     where
         T: AsRef<Scored>,
     {
-        let mut item_scores: HashMap<u64, f64> = HashMap::with_capacity(1000);
+        let mut contributions: Vec<(u64, f64)> = Vec::with_capacity(neighbors.len() * 8);
 
         for ss in neighbors.iter() {
             let scored_session = ss.as_ref();
             let training_item_ids: &[u64] = self.index.items_for_session(&scored_session.id);
 
-            let (first_match_index, _) = session
-                .iter()
-                .rev()
-                .enumerate()
-                .find(|(_, &id_score)| training_item_ids.contains(&(id_score.id as ItemId)))
-                .unwrap();
-
-            let first_match_pos = first_match_index + 1;
-
+            let Some(first_match_pos) = first_match_position(session, training_item_ids) else {
+                continue;
+            };
             let session_weight = linear_score(first_match_pos);
+            if session_weight <= 0.0 {
+                continue;
+            }
+            let weighted_score = session_weight * scored_session.score;
 
             for item_id in training_item_ids.iter() {
-                let item_idf = self.index.item_to_idf_score[item_id];
-                // let item_idf = 0.0;
-                if item_idf > 0.0 {
-                    *item_scores.entry(*item_id).or_insert(0.0) +=
-                        session_weight * item_idf * scored_session.score;
-                } else {
-                    *item_scores.entry(*item_id).or_insert(0.0) +=
-                        session_weight * scored_session.score;
-                }
+                contributions.push((*item_id, weighted_score));
             }
         }
 
-        // Remove most recent item if it has been scored as well
-        let most_recent_item = *session.last().unwrap();
-        if let Entry::Occupied(entry) = item_scores.entry(most_recent_item.id as ItemId) {
-            entry.remove_entry();
-        }
-        item_scores
-            .iter_mut()
-            .sorted_by(|a, b| match a.1.partial_cmp(&b.1) {
-                Some(Ordering::Less) => Ordering::Greater,
-                Some(Ordering::Greater) => Ordering::Less,
-                _ => a.0.cmp(b.0),
-            })
-            .take(how_many)
-            .map(|(&item, weight)| Scored::new(item as u32, *weight))
-            .collect_vec()
+        top_scored_items_from_contributions(
+            contributions,
+            how_many,
+            session.last().unwrap().id as ItemId,
+        )
     }
 
     // Function to predict based on given session data
@@ -145,26 +166,17 @@ impl RetrievalBasedModel for VMISKNN {
         let scored_session = neighbor.as_ref();
         let training_item_ids: &[u64] = self.index.items_for_session(&scored_session.id);
 
-        let (first_match_index, _) = query_session
-            .iter()
-            .rev()
-            .enumerate()
-            .find(|(_, item_id)| training_item_ids.contains(&(item_id.id as u64)))
-            .unwrap();
-
-        let first_match_pos = first_match_index + 1;
-
+        let Some(first_match_pos) = first_match_position(query_session, training_item_ids) else {
+            return;
+        };
         let session_weight = linear_score(first_match_pos);
+        if session_weight <= 0.0 {
+            return;
+        }
+        let weighted_score = session_weight * scored_session.score;
 
         for item_id in training_item_ids.iter() {
-            // let _item_idf = self.index.item_to_idf_score[item_id];
-            let item_idf = 0.0;
-            if item_idf > 0.0 {
-                *agg.entry(*item_id).or_insert(0.0) +=
-                    session_weight * item_idf * scored_session.score;
-            } else {
-                *agg.entry(*item_id).or_insert(0.0) += session_weight * scored_session.score;
-            }
+            *agg.entry(*item_id).or_insert(0.0) += weighted_score;
         }
     }
 
@@ -177,26 +189,17 @@ impl RetrievalBasedModel for VMISKNN {
         let scored_session = neighbor.as_ref();
         let training_item_ids: &[u64] = self.index.items_for_session(&scored_session.id);
 
-        let (first_match_index, _) = query_session
-            .iter()
-            .rev()
-            .enumerate()
-            .find(|(_, item_id)| training_item_ids.contains(&(item_id.id as ItemId)))
-            .unwrap();
-
-        let first_match_pos = first_match_index + 1;
-
+        let Some(first_match_pos) = first_match_position(query_session, training_item_ids) else {
+            return;
+        };
         let session_weight = linear_score(first_match_pos);
+        if session_weight <= 0.0 {
+            return;
+        }
+        let weighted_score = session_weight * scored_session.score;
 
         for item_id in training_item_ids.iter() {
-            // TODO the or_insert should never happen!
-            let item_idf = 0.0;
-            if item_idf > 0.0 {
-                *agg.entry(*item_id).or_insert(0.0) -=
-                    session_weight * item_idf * scored_session.score;
-            } else {
-                *agg.entry(*item_id).or_insert(0.0) -= session_weight * scored_session.score;
-            }
+            *agg.entry(*item_id).or_insert(0.0) -= weighted_score;
         }
     }
 
@@ -206,17 +209,10 @@ impl RetrievalBasedModel for VMISKNN {
         agg: &HashMap<u64, f64>,
     ) -> Vec<Scored> {
         let most_recent_item = *query_session.last().unwrap();
-
-        agg.iter()
-            .filter(|(&item, _)| item != most_recent_item.id as u64) // Skip most recent item
-            .sorted_by(|a, b| match a.1.partial_cmp(b.1) {
-                Some(Ordering::Less) => Ordering::Greater,
-                Some(Ordering::Greater) => Ordering::Less,
-                _ => a.0.cmp(b.0),
-            })
-            .take(21)
-            .map(|(&item, _)| Scored::new(item as u32, 1.0))
-            .collect_vec()
+        top_scored_items_excluding(agg, 21, most_recent_item.id as u64)
+            .into_iter()
+            .map(|scored| Scored::new(scored.id, 1.0))
+            .collect()
     }
 
     fn predict(
@@ -276,38 +272,6 @@ impl PartialOrd for Scored {
     }
 }
 
-#[derive(Eq, Debug)]
-pub struct SessionTime {
-    pub session_id: u32,
-    pub time: u32,
-}
-
-impl SessionTime {
-    pub fn new(session_id: u32, time: u32) -> Self {
-        SessionTime { session_id, time }
-    }
-}
-
-impl Ord for SessionTime {
-    fn cmp(&self, other: &Self) -> Ordering {
-        // reverse order by time
-        other.time.cmp(&self.time)
-    }
-}
-
-impl PartialOrd for SessionTime {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for SessionTime {
-    fn eq(&self, other: &Self) -> bool {
-        // == is defined as being based on the contents of an object.
-        self.session_id == other.session_id
-    }
-}
-
 pub fn linear_score(pos: usize) -> f64 {
     if pos < 10 {
         1.0 - (0.1 * pos as f64)
@@ -318,8 +282,6 @@ pub fn linear_score(pos: usize) -> f64 {
 
 pub trait SimilarityComputationNew {
     fn items_for_session(&self, session_idx: &u32) -> &[u64];
-
-    fn idf(&self, item_id: &u64) -> f64;
 
     /// find neighboring sessions for the given evolving_session.
     /// param m select the 'm' most recent historical sessions
@@ -332,88 +294,102 @@ impl SimilarityComputationNew for VMISIndex {
         &self.session_to_items_sorted[*session as usize]
     }
 
-    fn idf(&self, item: &u64) -> f64 {
-        self.item_to_idf_score[item]
-    }
-
     fn find_neighbors(&self, evolving_session: &Vec<Scored>, k: usize, m: usize) -> Vec<Scored> {
-        // We use a d-ary heap for the (timestamp, session_id) tuple, a hashmap for the (session_id, score) tuples, and a hashmap for the unique items in the evolving session
-        let mut heap_timestamps = OctonaryHeap::<SessionTime>::with_capacity(m);
-        let mut session_similarities = HashMap::with_capacity(m);
-        let len_evolving_session = evolving_session.len();
-        let mut unique = evolving_session
-            .iter()
-            .map(|id_score| id_score.id)
-            .collect_vec();
-        unique.sort_unstable();
-        unique.dedup();
+        find_neighbors_internal(self, evolving_session, k, m, None)
+    }
+}
 
-        let qty_unique_session_items = unique.len() as f64;
+pub fn profile_find_neighbors(
+    index: &VMISIndex,
+    evolving_session: &Vec<Scored>,
+    k: usize,
+    m: usize,
+) -> ProfiledNeighbors {
+    let mut stats = FindNeighborsStats::default();
+    let neighbors = find_neighbors_internal(index, evolving_session, k, m, Some(&mut stats));
+    ProfiledNeighbors { neighbors, stats }
+}
 
-        let mut hash_items = HashMap::with_capacity(len_evolving_session);
+fn find_neighbors_internal(
+    index: &VMISIndex,
+    evolving_session: &Vec<Scored>,
+    k: usize,
+    m: usize,
+    stats: Option<&mut FindNeighborsStats>,
+) -> Vec<Scored> {
+    let prepare_started = std::time::Instant::now();
+    let len_evolving_session = evolving_session.len();
+    let qty_unique_session_items = evolving_session
+        .iter()
+        .map(|id_score| id_score.id)
+        .collect::<HashSet<_>>()
+        .len();
+    let mut seen_items = HashSet::with_capacity(qty_unique_session_items);
+    let prepare_ns = prepare_started.elapsed().as_nanos() as u64;
 
-        //  Loop over items in evolving session in reverse order
-        for (pos, id_score) in evolving_session.iter().rev().enumerate() {
-            let item_id = id_score.id as u64;
-            // Duplicate items: only calculate similarity score for the item in the farthest position in the evolving session
-            match hash_items.insert(item_id, pos) {
-                Some(_) => {}
-                None => {
-                    // Find similar sessions in training data
-                    if let Some(similar_sessions) = self.item_to_top_sessions_ordered.get(&item_id)
-                    {
-                        let decay_factor =
-                            (len_evolving_session - pos) as f64 / qty_unique_session_items;
-                        // Loop over all similar sessions.
-                        'session_loop: for session_id in similar_sessions {
-                            match session_similarities.get_mut(session_id) {
-                                Some(similarity) => *similarity += decay_factor,
-                                None => {
-                                    let session_time_stamp =
-                                        self.session_to_max_time_stamp[*session_id as usize];
-                                    if session_similarities.len() < m {
-                                        session_similarities.insert(*session_id, decay_factor);
-                                        heap_timestamps.push(SessionTime::new(
-                                            *session_id,
-                                            session_time_stamp,
-                                        ));
-                                    } else {
-                                        let mut bottom = heap_timestamps.peek_mut().unwrap();
-                                        if session_time_stamp > bottom.time {
-                                            // log::debug!("{:?} {:?}", session_time_stamp, bottom.time);
-                                            // Remove the the existing minimum time stamp.
-                                            session_similarities.remove_entry(&bottom.session_id);
-                                            // Set new minimum timestamp
-                                            session_similarities.insert(*session_id, decay_factor);
-                                            *bottom =
-                                                SessionTime::new(*session_id, session_time_stamp);
-                                        } else {
-                                            break 'session_loop;
-                                        }
-                                    }
-                                }
+    let accumulate_started = std::time::Instant::now();
+    let mut heap_timestamps = OctonaryHeap::<SessionTime>::with_capacity(m);
+    let mut session_similarities = HashMap::with_capacity(m);
+    let mut similar_session_visits = 0u64;
+
+    for (pos, id_score) in evolving_session.iter().rev().enumerate() {
+        let item_id = id_score.id as u64;
+        if !seen_items.insert(item_id) {
+            continue;
+        }
+
+        if let Some(similar_sessions) = index.item_to_top_sessions_ordered.get(&item_id) {
+            let decay_factor =
+                (len_evolving_session - pos) as f64 / qty_unique_session_items as f64;
+            'session_loop: for session_id in similar_sessions {
+                similar_session_visits += 1;
+                match session_similarities.get_mut(session_id) {
+                    Some(similarity) => *similarity += decay_factor,
+                    None => {
+                        let session_time_stamp =
+                            index.session_to_max_time_stamp[*session_id as usize];
+                        if session_similarities.len() < m {
+                            session_similarities.insert(*session_id, decay_factor);
+                            heap_timestamps.push(SessionTime::new(*session_id, session_time_stamp));
+                        } else {
+                            let mut bottom = heap_timestamps.peek_mut().unwrap();
+                            if session_time_stamp > bottom.time {
+                                session_similarities.remove_entry(&bottom.session_id);
+                                session_similarities.insert(*session_id, decay_factor);
+                                *bottom = SessionTime::new(*session_id, session_time_stamp);
+                            } else {
+                                break 'session_loop;
                             }
                         }
                     }
                 }
             }
         }
-
-        let mut session_similarity_keys: Vec<_> = session_similarities.keys().collect();
-        session_similarity_keys.sort();
-
-        //dbg!(&session_similarities);
-        let mut topk = TopK::new(k);
-        //for (session_id, score) in session_similarities.iter() {
-        for session_id in session_similarity_keys {
-            let score = session_similarities.get(session_id).unwrap();
-            let scored_session = Scored::new(*session_id, *score);
-            topk.add(scored_session, &self.session_to_max_time_stamp);
-        }
-        // Closest neigbours contain unique session_ids and corresponding top-k similarity scores.as
-        // Return top-k neighbors in arbitrary order.
-        topk.iter().cloned().collect_vec()
     }
+    let accumulate_ns = accumulate_started.elapsed().as_nanos() as u64;
+
+    let rank_started = std::time::Instant::now();
+    let mut topk = TopK::new(k);
+    let mut similarity_entries: Vec<_> = session_similarities.into_iter().collect();
+    similarity_entries.sort_unstable_by_key(|(session_id, _)| *session_id);
+    for (session_id, score) in similarity_entries {
+        topk.add(
+            Scored::new(session_id, score),
+            &index.session_to_max_time_stamp,
+        );
+    }
+    let neighbors = topk.iter().cloned().collect_vec();
+    let rank_ns = rank_started.elapsed().as_nanos() as u64;
+
+    if let Some(stats) = stats {
+        stats.prepare_ns = prepare_ns;
+        stats.accumulate_ns = accumulate_ns;
+        stats.rank_ns = rank_ns;
+        stats.unique_query_items = qty_unique_session_items as u64;
+        stats.similar_session_visits = similar_session_visits;
+    }
+
+    neighbors
 }
 
 fn create_session_to_items(sessions: &SessionDataset) -> Vec<Vec<u64>> {
@@ -443,23 +419,87 @@ fn create_session_to_max_time_stamp(sessions: &SessionDataset) -> Vec<u32> {
     result
 }
 
-fn create_item_idf(sessions: &SessionDataset) -> HashMap<u64, f64> {
-    // TODO why is this not used?
-    // let qty_total_sessions: usize= sessions.sessions.keys().len();
-    let mut unique_sessions_count: HashMap<u64, HashSet<SessionId>> = HashMap::new();
-    // Count unique sessions for each item
-    for (&session_id, (item_ids, _)) in sessions.sessions.iter() {
-        for item_id in item_ids {
-            let item_sessions = unique_sessions_count
-                .entry(*item_id)
-                .or_default();
-            item_sessions.insert(session_id);
+fn first_match_position(query_session: &[Scored], training_item_ids: &[u64]) -> Option<usize> {
+    query_session
+        .iter()
+        .rev()
+        .take(9)
+        .position(|item_id| training_item_ids.contains(&(item_id.id as u64)))
+        .map(|index| index + 1)
+}
+
+fn top_scored_items_excluding(
+    item_scores: &HashMap<u64, f64>,
+    how_many: usize,
+    excluded_item_id: u64,
+) -> Vec<Scored> {
+    collect_top_scored_items(item_scores.iter(), how_many, excluded_item_id)
+}
+
+fn collect_top_scored_items<'a>(
+    item_scores: impl Iterator<Item = (&'a u64, &'a f64)>,
+    how_many: usize,
+    excluded_item_id: u64,
+) -> Vec<Scored> {
+    if how_many == 0 {
+        return Vec::new();
+    }
+
+    let mut top_items: Vec<Scored> = item_scores
+        .filter(|(item_id, _)| **item_id != excluded_item_id)
+        .map(|(&item_id, &score)| Scored::new(item_id as u32, score))
+        .collect();
+
+    if top_items.len() > how_many {
+        top_items.select_nth_unstable(how_many);
+        top_items.truncate(how_many);
+    }
+
+    top_items.sort_unstable();
+    top_items.truncate(how_many);
+    top_items
+}
+
+fn top_scored_items_from_contributions(
+    mut contributions: Vec<(u64, f64)>,
+    how_many: usize,
+    excluded_item_id: u64,
+) -> Vec<Scored> {
+    if how_many == 0 || contributions.is_empty() {
+        return Vec::new();
+    }
+
+    contributions.sort_unstable_by_key(|(item_id, _)| *item_id);
+
+    let mut aggregated_scores: Vec<Scored> = Vec::with_capacity(contributions.len());
+    let mut contributions_iter = contributions.into_iter();
+
+    if let Some((mut current_item, mut current_score)) = contributions_iter.next() {
+        for (item_id, score) in contributions_iter {
+            if item_id == current_item {
+                current_score += score;
+            } else {
+                if current_item != excluded_item_id {
+                    aggregated_scores.push(Scored::new(current_item as u32, current_score));
+                }
+                current_item = item_id;
+                current_score = score;
+            }
+        }
+
+        if current_item != excluded_item_id {
+            aggregated_scores.push(Scored::new(current_item as u32, current_score));
         }
     }
-    // let result: HashMap<u64, f64> = unique_sessions_count.iter().map(|(item_id, session_ids)| (*item_id, (qty_total_sessions as f64/ session_ids.len() as f64).ln() )).collect();
-    let result: HashMap<u64, f64> = unique_sessions_count.keys().map(|item_id| (*item_id, 1.0))
-        .collect();
-    result
+
+    if aggregated_scores.len() > how_many {
+        aggregated_scores.select_nth_unstable(how_many);
+        aggregated_scores.truncate(how_many);
+    }
+
+    aggregated_scores.sort_unstable();
+    aggregated_scores.truncate(how_many);
+    aggregated_scores
 }
 
 pub fn create_most_recent_sessions_per_item(

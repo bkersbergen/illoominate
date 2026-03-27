@@ -1,18 +1,14 @@
-use crate::importance::{Dataset, evaluate_dataset};
+use crate::importance::{evaluate_dataset, Dataset};
+use crate::metrics::MetricFactory;
 use crate::nbr::tifuknn::types::{HyperParams, UserId};
 use crate::nbr::tifuknn::TIFUKNN;
 use crate::nbr::types::NextBasketDataset;
-use crate::metrics::MetricFactory;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use std::cmp::max;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
-
-
-
-
 
 pub fn tifu_evaluate_removal_impact(
     experiment_type: &str,
@@ -31,7 +27,6 @@ pub fn tifu_evaluate_removal_impact(
     assert!(training_baskets.len() >= keys_to_remove.len());
 
     let model = TIFUKNN::new(&training_baskets, hp);
-
 
     let validation_evaluation_metrics: Vec<(String, f64)> =
         evaluate_dataset(&model, metric_factory, valid);
@@ -100,15 +95,10 @@ pub fn tifu_evaluate_removal_impact(
     log::debug!("end removing users in evaluate_removal_impact");
 }
 
-
 pub fn split_train_eval(
     all_baskets_by_user: NextBasketDataset,
     validation_ratio: f64,
-) -> (
-    NextBasketDataset,
-    NextBasketDataset,
-    NextBasketDataset,
-) {
+) -> (NextBasketDataset, NextBasketDataset, NextBasketDataset) {
     let mut train_baskets_by_user = HashMap::new();
     let mut heldout_baskets_by_user = Vec::new();
 
@@ -116,7 +106,7 @@ pub fn split_train_eval(
         if baskets.len() > 1 {
             // Sort baskets by ID in descending order and pop the basket with the largest ID
             baskets.sort_by(|a, b| b.id.cmp(&a.id));
-            let largest_basket = baskets.remove(0);  // Now the basket with the largest ID is the first item
+            let largest_basket = baskets.remove(0); // Now the basket with the largest ID is the first item
             train_baskets_by_user.insert(user_id, baskets);
             heldout_baskets_by_user.push((user_id, largest_basket));
         }
@@ -139,5 +129,9 @@ pub fn split_train_eval(
         test.insert(*k, vec![v.clone()]);
     }
 
-    (NextBasketDataset::from(&train_baskets_by_user), NextBasketDataset::from(&evaluate), NextBasketDataset::from(&test))
+    (
+        NextBasketDataset::from(&train_baskets_by_user),
+        NextBasketDataset::from(&evaluate),
+        NextBasketDataset::from(&test),
+    )
 }

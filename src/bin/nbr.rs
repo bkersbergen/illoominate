@@ -74,6 +74,4 @@
 //     println!("{}: {:.4}", hitrate.get_name(), hitrate.result()); // 0.5826 - 0.5841
 //     println!("{}: {:.4}", recall.get_name(), recall.result()); // 0.4297 - 0.4298
 // }
-fn main() {
-
-}
+fn main() {}

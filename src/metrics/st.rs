@@ -73,9 +73,9 @@ impl<'a> Metric for St<'a> {
 
 #[cfg(test)]
 mod St_test {
-    use itertools::Itertools;
     use super::*;
     use crate::sessrec::types::ItemId;
+    use itertools::Itertools;
 
     #[test]
     fn should_calculate_sustainability_coverage_term() {
@@ -87,16 +87,18 @@ mod St_test {
         let mut under_test = St::new(&product_info, length);
         let recommendations: Vec<Scored> = vec![
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        ].iter()
-            .map(|&id| Scored::new(id, 1.0))
-            .collect_vec();
-        let _next_items: Vec<Scored> = vec![3, 55, 3, 4].iter()
+        ]
+        .iter()
+        .map(|&id| Scored::new(id, 1.0))
+        .collect_vec();
+        let _next_items: Vec<Scored> = vec![3, 55, 3, 4]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         under_test.add(&recommendations, &_next_items);
         let expected = qty_sustainable_items_also_in_recommendations as f64 / length as f64;
         assert!((expected - under_test.result()).abs() < f64::EPSILON);
-        assert_eq!("SustainabilityCoverage@20", under_test.get_name());
+        assert_eq!("St@20", under_test.get_name());
     }
     #[test]
     fn handle_empty_recommendations() {
@@ -105,7 +107,8 @@ mod St_test {
         let length = 21;
         let mut under_test = St::new(&product_info, length);
         let recommendations: Vec<Scored> = vec![];
-        let _next_items: Vec<Scored> = vec![1, 2, 3].iter()
+        let _next_items: Vec<Scored> = vec![1, 2, 3]
+            .iter()
             .map(|&id| Scored::new(id, 1.0))
             .collect_vec();
         under_test.add(&recommendations, &_next_items);

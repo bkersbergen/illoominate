@@ -4,7 +4,6 @@ use crate::metrics::st::St;
 use crate::metrics::Metric;
 use crate::sessrec::vmisknn::Scored;
 
-
 #[derive(Debug, Clone)]
 pub struct SustainableNdcg<'a> {
     ndcg: Ndcg,

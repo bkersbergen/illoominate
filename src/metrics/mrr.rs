@@ -64,14 +64,37 @@ mod mrr_test {
     fn should_calculate_mrr() {
         let mut mymetric = Mrr::new(20);
         let recommendations: Vec<Scored> = vec![
-            Scored::new(1_u32,1.0),Scored::new(2_u32,1.0),Scored::new(3_u32,1.0),Scored::new(4_u32,1.0),
-            Scored::new(5_u32,1.0),Scored::new(6_u32,1.0),Scored::new(7_u32,1.0),Scored::new(8_u32,1.0),
-            Scored::new(9_u32,1.0),Scored::new(10_u32,1.0),Scored::new(11_u32,1.0),Scored::new(12_u32,1.0),
-            Scored::new(13_u32,1.0),Scored::new(14_u32,1.0),Scored::new(15_u32,1.0),Scored::new(16_u32,1.0),
-            Scored::new(17_u32,1.0),Scored::new(18_u32,1.0),Scored::new(19_u32,1.0),Scored::new(20_u32,1.0),
-            Scored::new(21_u32,1.0),Scored::new(22_u32,1.0),Scored::new(23_u32,1.0),Scored::new(24_u32,1.0),
+            Scored::new(1_u32, 1.0),
+            Scored::new(2_u32, 1.0),
+            Scored::new(3_u32, 1.0),
+            Scored::new(4_u32, 1.0),
+            Scored::new(5_u32, 1.0),
+            Scored::new(6_u32, 1.0),
+            Scored::new(7_u32, 1.0),
+            Scored::new(8_u32, 1.0),
+            Scored::new(9_u32, 1.0),
+            Scored::new(10_u32, 1.0),
+            Scored::new(11_u32, 1.0),
+            Scored::new(12_u32, 1.0),
+            Scored::new(13_u32, 1.0),
+            Scored::new(14_u32, 1.0),
+            Scored::new(15_u32, 1.0),
+            Scored::new(16_u32, 1.0),
+            Scored::new(17_u32, 1.0),
+            Scored::new(18_u32, 1.0),
+            Scored::new(19_u32, 1.0),
+            Scored::new(20_u32, 1.0),
+            Scored::new(21_u32, 1.0),
+            Scored::new(22_u32, 1.0),
+            Scored::new(23_u32, 1.0),
+            Scored::new(24_u32, 1.0),
         ];
-        let actual_next_items: Vec<Scored> = vec![Scored::new(3_u32,1.0), Scored::new(55_u32, 1.0), Scored::new(3_u32,1.0), Scored::new(4_u32, 1.0)];
+        let actual_next_items: Vec<Scored> = vec![
+            Scored::new(3_u32, 1.0),
+            Scored::new(55_u32, 1.0),
+            Scored::new(3_u32, 1.0),
+            Scored::new(4_u32, 1.0),
+        ];
         mymetric.add(&recommendations, &actual_next_items);
         assert_eq!(0.3333333333333333, mymetric.result());
         assert_eq!("Mrr@20", mymetric.get_name());
@@ -81,7 +104,7 @@ mod mrr_test {
     fn handle_empty_recommendations() {
         let mymetric = Mrr::new(20);
         let recommendations: Vec<Scored> = vec![];
-        let actual_next_items: Vec<Scored> = vec![Scored::new(1_u32,1.0),Scored::new(2_u32,1.0)];
+        let actual_next_items: Vec<Scored> = vec![Scored::new(1_u32, 1.0), Scored::new(2_u32, 1.0)];
         let result = mymetric.compute(&recommendations, &actual_next_items);
         assert_eq!(0.0, result);
     }
