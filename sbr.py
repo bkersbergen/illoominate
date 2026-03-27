@@ -11,7 +11,7 @@ loo_values = illoominate.data_loo_values(
     validation_df=validation_df,
     model='vmis',
     metric='mrr@20',
-    params={'m':500, 'k':100, 'seed': 42},
+    params={'m':100, 'k':100, 'seed': 42},
 )
 loo_values.to_csv(f'{location}/data_loo_values.csv', index=False)
 
@@ -29,7 +29,7 @@ shapley_values = illoominate.data_shapley_values(
     validation_df=validation_df,
     model='vmis',
     metric='mrr@20',
-    params={'m':500, 'k':100, 'seed': 42},
+    params={'m':100, 'k':100, 'seed': 42},
 )
 shapley_values.to_csv(f'{location}/shapley_values.csv', index=False)
 
