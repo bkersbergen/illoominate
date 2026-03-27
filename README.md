@@ -13,7 +13,7 @@ This repository contains the official code for the <span style="font-variant: sm
 
 **Citation:**
 ```bibtex
-@inproceedings{kersbergen-2025-scalable,
+@inproceedings{kersbergen-2025-kmc-shapley,
 author = {Kersbergen, Barrie and Sprangers, Olivier and Karla{\v s}, Bojan and de Rijke, Maarten and Schelter, Sebastian},
 booktitle = {RecSys 2025: 19th ACM Conference on Recommender Systems},
 date-added = {2025-07-03 20:57:23 +0200},
