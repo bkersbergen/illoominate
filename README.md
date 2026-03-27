@@ -413,10 +413,10 @@ Contributions and discussions are welcome!
 
 
 # Releasing a new version of Illoominate
-Increment the version number in pyproject.toml
+Increment the version number in `pyproject.toml` and `Cargo.toml`.
 
 Trigger a build using the CI pipeline in Github, via either:
-* A push is made to the main branch with a tag matching *-rc* (e.g., v1.0.0-rc1).
+* A push is made with a tag matching `v*` (e.g., `v1.0.0`).
 * A pull request is made to the main branch.
 * A push occurs on a branch that starts with branch-*.
 
