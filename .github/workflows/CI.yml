@@ -4,13 +4,14 @@ on:
   pull_request:
     branches: ["main"]
   push:
-    tags: ["v*"]
+    tags: ["*-rc*"]
     branches: ["main", "master", "branch-*"]
 
 jobs:
   build-linux:
     name: Linux
     runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '-rc')
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +40,7 @@ jobs:
   build-macos-intel:
     name: macOS (Intel)
     runs-on: macos-latest
+    if: contains(github.event.head_commit.message, '-rc')
     steps:
       - uses: actions/checkout@v4
 
@@ -77,6 +79,7 @@ jobs:
   build-macos-arm:
     name: macOS (ARM64)
     runs-on: macos-latest
+    if: contains(github.event.head_commit.message, '-rc')
     steps:
       - uses: actions/checkout@v4
 
@@ -108,6 +111,7 @@ jobs:
   build-windows:
     name: Windows
     runs-on: windows-latest
+    if: contains(github.event.head_commit.message, '-rc')
     steps:
       - uses: actions/checkout@v4
 
@@ -141,6 +145,7 @@ jobs:
       - build-macos-intel
       - build-macos-arm
       - build-windows
+    if: contains(github.event.head_commit.message, '-rc')
     steps:
       - name: Merge Build Artifacts
         uses: actions/upload-artifact/merge@v4
