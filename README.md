@@ -1,4 +1,4 @@
-# Illoominate - Data Importance for Recommender Systems
+# Illoominate - Data Importance for sequential kNN-based Recommendation Models
 
 [![DOI](https://img.shields.io/badge/DOI-10.1145%2F3705328.3748049-blue.svg)](https://doi.org/10.1145/3705328.3748049)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
