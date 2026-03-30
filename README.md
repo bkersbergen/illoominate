@@ -318,7 +318,7 @@ scores = illoominate.train_and_evaluate_for_sbr_files(
 print(scores)
 ```
 
-This path is intended for large datasets where the pandas to Polars conversion and Python-side indexing overhead would otherwise dominate memory use.
+This approach is designed for large-scale datasets where pandas introduces substantial overhead. In practice, loading data into pandas can require up to ~3× the size of the raw file on disk due to in-memory representations and indexing. By reading directly from delimited files, you avoid this overhead entirely, resulting in significantly lower memory usage.
 
 
 ### Supported Recommendation models and Metrics
