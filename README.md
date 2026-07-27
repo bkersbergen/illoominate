@@ -9,19 +9,29 @@
 
 <span style="font-variant: small-caps;">Illoominate</span> is a library that implements the KMC-Shapley algorithm for computing data importance scores in recommender systems. The KMC-Shapley algorithm leverages the sparsity and nearest-neighbor structure of sequential kNN-based recommendation models to efficiently compute Data Shapley values (DSV) and leave-one-out (LOO) scores. This algorithmic approach enables scalable data debugging and importance analysis for real-world datasets with millions of interactions in session-based and next-basket recommendation tasks.
 
-This repository contains the official code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies our paper accepted at RecSys 2025. The paper is available with open access at [https://dl.acm.org/doi/10.1145/3705328.3748049](https://dl.acm.org/doi/10.1145/3705328.3748049).
+This repository contains the official code for the <span style="font-variant: small-caps;">Illoominate</span> framework, which accompanies our papers accepted at [TORS 2026](https://dl.acm.org/doi/10.1145/3828670) and [RecSys 2025](https://dl.acm.org/doi/10.1145/3705328.3748049). The papers are available with open access.
 
-**Citation:**
+**Citations:**
+```bibtex
+@inproceedings{kersbergen-2026-shapley-illoominate,
+  title={Illoominate--Data Shapley Values for Debugging Neighborhood-based Recommender Systems},
+  author={Kersbergen, Barrie and Sprangers, Olivier and Karlas, Bojan and de Rijke, Maarten and Schelter, Sebastian},
+  journal={ACM Transactions on Recommender Systems},
+  year={2026},
+  publisher={ACM}
+}
+```
+
 ```bibtex
 @inproceedings{kersbergen-2025-kmc-shapley,
-author = {Kersbergen, Barrie and Sprangers, Olivier and Karla{\v s}, Bojan and de Rijke, Maarten and Schelter, Sebastian},
-booktitle = {RecSys 2025: 19th ACM Conference on Recommender Systems},
-date-added = {2025-07-03 20:57:23 +0200},
-date-modified = {2025-07-03 21:01:57 +0200},
-month = {September},
-publisher = {ACM},
-title = {Scalable Data Debugging for Neighborhood-based Recommendation with Data Shapley Values},
-year = {2025}}
+  author = {Kersbergen, Barrie and Sprangers, Olivier and Karla{\v s}, Bojan and de Rijke, Maarten and Schelter, Sebastian},
+  booktitle = {RecSys 2025: 19th ACM Conference on Recommender Systems},
+  date-added = {2025-07-03 20:57:23 +0200},
+  date-modified = {2025-07-03 21:01:57 +0200},
+  month = {September},
+  publisher = {ACM},
+  title = {Scalable Data Debugging for Neighborhood-based Recommendation with Data Shapley Values},
+  year = {2025}}
 ```
 
 ### Key Features
