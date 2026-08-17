@@ -15,7 +15,7 @@ This repository contains the official code for the <span style="font-variant: sm
 ```bibtex
 @inproceedings{kersbergen-2026-shapley-illoominate,
   title={Illoominate--Data Shapley Values for Debugging Neighborhood-based Recommender Systems},
-  author={Kersbergen, Barrie and Sprangers, Olivier and Karlas, Bojan and de Rijke, Maarten and Schelter, Sebastian},
+  author = {Kersbergen, Barrie and Sprangers, Olivier and Karla{\v s}, Bojan and de Rijke, Maarten and Schelter, Sebastian},
   journal={ACM Transactions on Recommender Systems},
   year={2026},
   publisher={ACM}
